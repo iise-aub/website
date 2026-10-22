@@ -39,10 +39,10 @@ Send everything in English. Send Arabic too if you have it; otherwise Claude dra
 
 ### Page text (facts only the team knows)
 
-- [ ] Mission statement (exact wording, or approval of a draft). Owner: to assign
-- [ ] About the chapter: what we do, the faculty advisor (if they want to be named). Owner: to assign
+- [ ] Mission statement: **approve or edit the draft** now on the About page (written by Claude from AUB's chapter page, Oct 23 2026). Owner: cabinet
+- [ ] About the chapter: "what we do" list drafted (Oct 23 2026); check it, and say whether the faculty advisor wants to be named. Owner: to assign
 - [ ] Member benefits we actually offer (for "Why join"). Owner: to assign
-- [ ] The IE path at AUB: the major, and where graduates go. Claude can draft this from AUB's public pages; someone must check it. Owner: to assign
+- [ ] The IE path at AUB: drafted from AUB's IEM history page (Oct 23 2026) on About and New to IE; someone should give it a quick check. Where graduates go is covered by the Careers in IE page. Owner: to assign
 - [ ] For the Companies page: why companies should work with us, and what we offer (for example talks, workshops, recruiting access). Owner: to assign
 - ~~Past partners and current sponsors~~ Not needed: sponsor list removed by Saad (Oct 22, 2026).
 - [ ] Weekly puzzle: check the wording on the puzzle page and teaser (Panel → Page text → Weekly puzzle page), and decide whether there are prizes. If there are, players need verified accounts first (Phase 2). Owner: Saad
@@ -72,8 +72,8 @@ Each milestone needs: English title and text, date (year, or full date if known)
 
 **Fill-in sheet:** `content-templates/history-milestones.csv` (opens in Excel or Google Sheets).
 
-- [ ] When IISE was established worldwide. Starting point to check: founded in 1948 as the American Institute of Industrial Engineers (AIIE); confirm on iise.org. Owner: to assign
-- [ ] When AUB introduced industrial engineering. Owner: to assign
+- [x] When IISE was established worldwide: 1948 as AIIE (source: iise.org/history, checked Oct 22 2026).
+- [x] When AUB introduced industrial engineering: August 2014; plus Engineering Management 1990 and the IEM department August 2015 (source: AUB IEM history page, checked Oct 22 2026).
 - [ ] When IISE AUB was founded. Owner: to assign
 - [ ] Best Society award, 2024: exact award name and awarding body. Owner: to assign
 - [ ] Further chapter milestones (events, firsts, awards). Owner: to assign

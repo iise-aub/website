@@ -132,6 +132,13 @@ Format: date, decision, decided by, why.
   - **"Which IE field are you?" quiz:** five playful questions; it suggests a top field and a runner-up. The questions live in code (`src/lib/fields.ts`); field texts are editable in the panel.
   - **Linked** from the New to IE page and the footer ("Careers in IE"); not in the top menu, which is full.
 
+- **2026-10-23. "Careers" in the top menu, and About page filled from research.** Requested by Saad ("add careers in ie to the top menu and do yr research to fill in the about section").
+  - The menu now has 8 items; "Careers" (Arabic «المسارات المهنية») opens `/fields`. Menu items never wrap; Arabic items are slightly tighter. Checked at 1000 and 1240 px in English and Arabic.
+  - **Sources used** (only official pages): AUB's chapter page (aub.edu.lb/msfea/iem/Pages/iise-aub.aspx), AUB's IEM history page (aub.edu.lb/msfea/iem/Pages/history.aspx), and iise.org/history.
+  - **About page:** draft mission; "what we do" list; a fuller IISE section (its 1948, 1981 and 2016 names); a new "Industrial engineering at AUB" section (1990, 2014, 2015). The mission is a **draft for the cabinet to approve**.
+  - **History map:** IISE 1948 and AUB IE in August 2014 are now confirmed with sources; two new confirmed stations added (Engineering Management 1990, IEM department August 2015). The brief says the team confirms dates, so Saad should OK these.
+  - Content in `db/update-research-2026-10-22.sql`; applied locally and on the live preview.
+
 ## Open questions for Saad
 
 These come from the "Still open" list in BRIEF.md. The history facts block launch, not the plan.
@@ -144,3 +151,5 @@ These come from the "Still open" list in BRIEF.md. The history facts block launc
 4. LinkedIn: does the chapter have a page?
 5. ~~Shared chapter email~~ Answered: iiseaub@outlook.com owns all accounts (Saad, Oct 22, 2026).
 6. Games: how they work. Needed before Phase 3.
+7. AUB's chapter page lists **aub-sc-ides@mail.aub.edu** as the chapter contact, not iiseaub@outlook.com. Should AUB update it, or should the site mention both?
+8. AUB's page also lists a Facebook page (facebook.com/iise.aub). Add it to the site's social links?

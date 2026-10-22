@@ -21,6 +21,9 @@ const arrow = lang === 'ar' ? '←' : '→';
       <a class="btn btn-ghost" href={`/${lang}/history`}>{t(lang, 'seeJourney')}</a>
     </div>
   </TextSection>
+  {tx('aub_title').text && <TextSection lang={lang} title={tx('aub_title')} body={tx('aub_body')} placeholder={ph('aub_body')} tone="tint" id="aub">
+    <a class="btn btn-ghost" href={`/${lang}/fields`}>{t(lang, 'fExplore')}</a>
+  </TextSection>}
   <TextSection lang={lang} title={tx('iise_title')} body={tx('iise_body')} placeholder={ph('iise_body')} tone="navy" id="iise" />
 </Base>
 <style>.actions { display: flex; flex-wrap: wrap; gap: 10px; }</style>

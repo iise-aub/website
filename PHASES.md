@@ -83,6 +83,8 @@ Current phase: **Phase 1 (Essentials)**. Started Oct 22, 2026 when Saad said "mo
 
 - 2026-10-22: **"Where can IE take you?" page built and published** (`/en/fields`, `/ar/fields`; migration 0006; Panel → IE fields). Tested: quiz scoring, no sideways scroll, Arabic at 375 px, and number order in Arabic counters fixed (also on the puzzle week badge).
 
+- 2026-10-23: "Careers" added to the top menu (8 items; no wrapping at 1000 px and up, English or Arabic). About page, New to IE "IE at AUB" and history stations (1948, 1990, 2014, 2015) filled from official AUB and IISE pages. Applied and deployed to the preview; live pages checked (200, new text present).
+
 ## In progress
 
 - Team: SETUP-GUIDE.md (Cloudflare and GitHub with iiseaub@outlook.com).

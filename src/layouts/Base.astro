@@ -24,7 +24,7 @@ const fullTitle = title === siteName ? title : `${title} · ${siteName}`;
 const ogImage = image ? new URL(image, site).href : new URL('/og-default.png', site).href;
 
 const nav = [
-  ['about', 'nav_about'], ['events', 'nav_events'], ['team', 'nav_team'], ['alumni', 'nav_alumni'],
+  ['about', 'nav_about'], ['events', 'nav_events'], ['team', 'nav_team'], ['alumni', 'nav_alumni'], ['fields', 'nav_careers'],
   ['history', 'nav_history'], ['game', 'nav_game'], ['contact', 'nav_contact'],
 ] as const;
 const isCurrent = (slug: string) => path.startsWith(`/${lang}/${slug}`);
@@ -220,9 +220,9 @@ const isCurrent = (slug: string) => path.startsWith(`/${lang}/${slug}`);
     .nav-list a {
       border: 0; padding: 10px 12px; border-radius: 999px; font-family: var(--font-latin); font-weight: 600;
       font-size: 0.82rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--grey-600);
-      transition: color 180ms ease, background-color 180ms ease;
+      white-space: nowrap; transition: color 180ms ease, background-color 180ms ease;
     }
-    :lang(ar) .nav-list a { font-family: var(--font-arabic); letter-spacing: 0; text-transform: none; font-size: 1rem; }
+    :lang(ar) .nav-list a { font-family: var(--font-arabic); letter-spacing: 0; text-transform: none; font-size: 0.95rem; padding-inline: 9px; }
     .nav-list a:hover, .nav-list a[aria-current='page'] { color: var(--navy-900); background: var(--steel-50); }
   }
 
