@@ -1,0 +1,31 @@
+---
+import Admin from '../../../layouts/Admin.astro';
+import { db } from '../../../lib/db';
+
+type F = { id: number; title_en: string; tagline_en: string; visible: number; photo_media_id: number | null; sort_order: number };
+const { results } = await db().prepare('SELECT id, title_en, tagline_en, visible, photo_media_id, sort_order FROM ie_fields ORDER BY sort_order, title_en').all<F>();
+---
+<Admin title="IE fields" active="fields">
+  <div class="page-head">
+    <div>
+      <h1>IE fields</h1>
+      <p>The “Where can IE take you?” page. Each field has an illustration; upload a photo to replace it. The quiz questions are fixed (ask the Technical Development team to change them).</p>
+    </div>
+    <a class="btn btn-ghost" href="/en/fields" target="_blank" rel="noopener">Open the page ↗</a>
+  </div>
+  <section class="card">
+    <ul class="list">
+      {results.map((f) => (
+        <li>
+          <div class="list-main">
+            <a class="list-title" href={`/admin/fields/${f.id}`}>{f.sort_order}. {f.title_en}</a>
+            <span class="list-meta">{f.tagline_en}</span>
+          </div>
+          {f.photo_media_id ? <span class="badge badge-ok">Photo</span> : <span class="badge badge-draft">Illustration</span>}
+          {!f.visible && <span class="badge badge-off">Hidden</span>}
+          <a class="icon-btn" href={`/admin/fields/${f.id}`}>Edit</a>
+        </li>
+      ))}
+    </ul>
+  </section>
+</Admin>

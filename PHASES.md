@@ -81,6 +81,8 @@ Current phase: **Phase 1 (Essentials)**. Started Oct 22, 2026 when Saad said "mo
 
 - 2026-10-22: Team "join" text set (positions open each fall). **Alumni section built and published:** `/alumni` page, Panel → Alumni, migration 0005. Tested locally: the consent rule hides entries without consent, the filters work, EN/AR labels are correct. Test entries removed. Live: /en/alumni and /ar/alumni return 200 and show "coming soon".
 
+- 2026-10-22: **"Where can IE take you?" page built and published** (`/en/fields`, `/ar/fields`; migration 0006; Panel → IE fields). Tested: quiz scoring, no sideways scroll, Arabic at 375 px, and number order in Arabic counters fixed (also on the puzzle week badge).
+
 ## In progress
 
 - Team: SETUP-GUIDE.md (Cloudflare and GitHub with iiseaub@outlook.com).

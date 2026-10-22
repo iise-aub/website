@@ -125,6 +125,13 @@ Format: date, decision, decided by, why.
   - Country names come from a fixed list of codes, shown in English or Arabic automatically.
   - "Alumni" added to the menu; between 1000 and 1239 px wide the CRN chip hides to make room (the Join button stays).
 
+- **2026-10-22. "Where can IE take you?" page (`/fields`).** Requested by Saad ("all the fields IEs can go into… informative but fun, add some pics").
+  - **10 fields:** Supply Chain & Logistics, Manufacturing & Production, Quality & Process Improvement, Data Analytics & Operations Research, Healthcare Systems, Consulting, Human Factors & Ergonomics, Project & Engineering Management, Finance & Banking, Energy & Sustainability.
+  - **Each field has:** tagline, explanation, "what you'd do", job titles, "you'll love it if…", and a fun fact (EN/AR). It is general career information, not chapter claims. Fun facts are well-established ones (e.g. Ford's 1913 moving assembly line, Six Sigma's 3.4 defects per million, the Gantt chart).
+  - **Pictures:** custom on-brand SVG illustrations drawn for each field (no stock photos, so no licensing or downloads). Any field can get a real photo in Panel → IE fields, which replaces the illustration.
+  - **"Which IE field are you?" quiz:** five playful questions; it suggests a top field and a runner-up. The questions live in code (`src/lib/fields.ts`); field texts are editable in the panel.
+  - **Linked** from the New to IE page and the footer ("Careers in IE"); not in the top menu, which is full.
+
 ## Open questions for Saad
 
 These come from the "Still open" list in BRIEF.md. The history facts block launch, not the plan.

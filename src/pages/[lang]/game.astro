@@ -43,7 +43,7 @@ const labels = {
 ---
 <Base lang={lang} title={`${tx('title').text} · ${tx('eyebrow').text}`} description={tx('intro').text} settings={settings}>
   <PageHead lang={lang} eyebrow={tx('eyebrow')} title={tx('title')} intro={tx('intro')}>
-    <p class="week-badge"><span class="dot" aria-hidden="true"></span>{week.replace('-W', ' · W')} · {L('gNewIn')} {daysLeft}{L('gDays')} {hoursLeft}{L('gHours')}</p>
+    <p class="week-badge"><span class="dot" aria-hidden="true"></span><span dir="ltr">{week.replace('-W', ' · W')}</span> · {L('gNewIn')} {daysLeft}{L('gDays')} {hoursLeft}{L('gHours')}</p>
   </PageHead>
 
   <div class="wrap game-grid">

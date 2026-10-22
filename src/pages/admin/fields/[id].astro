@@ -1,0 +1,64 @@
+---
+import Admin from '../../../layouts/Admin.astro';
+import BiField from '../../../components/admin/BiField.astro';
+import PhotoField from '../../../components/admin/PhotoField.astro';
+import FieldArt from '../../../components/FieldArt.astro';
+import { db } from '../../../lib/db';
+import { checked, field, getMedia, logChange, now, savePhotoFromForm } from '../../../lib/admin';
+
+type F = Record<string, string | number | null> & { id: number; slug: string; title_en: string; photo_media_id: number | null; visible: number; sort_order: number };
+const d = db();
+const by = Astro.locals.user!.email;
+const id = Number(Astro.params.id);
+if (!Number.isInteger(id)) return Astro.redirect('/admin/fields');
+const f = await d.prepare('SELECT * FROM ie_fields WHERE id = ?').bind(id).first<F>();
+if (!f) return Astro.redirect('/admin/fields');
+
+const pairs = ['title', 'tagline', 'body', 'tasks', 'roles', 'love_if', 'fun_fact'];
+const errors: Record<string, string> = {};
+let values: Record<string, string> = {};
+let postedPhoto: number | null | undefined;
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  values = Object.fromEntries([...pairs.flatMap((p) => [`${p}_en`, `${p}_ar`]), 'sort_order'].map((n) => [n, field(form, n)]));
+  postedPhoto = await savePhotoFromForm(form, 'photo');
+  if (!values.title_en) errors.title = 'The field needs an English title.';
+  if (Object.keys(errors).length === 0) {
+    const cols = pairs.flatMap((p) => [`${p}_en`, `${p}_ar`]);
+    await d.batch([
+      d.prepare(`UPDATE ie_fields SET ${cols.map((c) => `${c} = ?`).join(', ')}, photo_media_id = ?, sort_order = ?, visible = ?, updated_at = ?, updated_by = ? WHERE id = ?`)
+        .bind(...cols.map((c) => values[c]), postedPhoto ?? null, Number(values.sort_order) || 0, checked(form, 'visible'), now(), by, f.id),
+      logChange(by, 'ie_fields', f.id, 'update', values.title_en),
+    ]);
+    return Astro.redirect(`/admin/fields/${f.id}?saved=` + encodeURIComponent('Saved'), 303);
+  }
+}
+const v = (n: string) => (n in values ? values[n] : String(f[n] ?? ''));
+const photo = await getMedia(postedPhoto !== undefined ? postedPhoto : f.photo_media_id);
+---
+<Admin title={f.title_en} active="fields">
+  <p><a href="/admin/fields">← IE fields</a></p>
+  <div class="page-head"><div><h1>{f.title_en}</h1><p><a href={`/en/fields#${f.slug}`} target="_blank" rel="noopener">See it on the site ↗</a></p></div></div>
+  {Object.keys(errors).length > 0 && <div class="err-box" role="alert">Please fix these:<ul>{Object.values(errors).map((e) => <li>{e}</li>)}</ul></div>}
+  <form method="post" data-guard>
+    <section class="card form-grid">
+      <BiField name="title" label="Field name" en={v('title_en')} ar={v('title_ar')} required error={errors.title} />
+      <BiField name="tagline" label="One-line hook" hint="Short and fun, e.g. “Getting the right thing to the right place, right on time.”" en={v('tagline_en')} ar={v('tagline_ar')} />
+      <BiField name="body" label="Explanation" hint="Two or three sentences." long en={v('body_en')} ar={v('body_ar')} />
+      <BiField name="tasks" label="What you’d do" hint="One item per line (three is ideal)." long en={v('tasks_en')} ar={v('tasks_ar')} />
+      <BiField name="roles" label="Job titles" hint="One per line." long en={v('roles_en')} ar={v('roles_ar')} />
+      <BiField name="love_if" label="You’ll love it if…" en={v('love_if_en')} ar={v('love_if_ar')} />
+      <BiField name="fun_fact" label="Fun fact" hint="Only facts you are sure about." long en={v('fun_fact_en')} ar={v('fun_fact_ar')} />
+    </section>
+    <section class="card form-grid">
+      <h2>Picture</h2>
+      <div style="max-width:220px"><p class="hint">Current illustration (shown when there is no photo):</p><FieldArt slug={f.slug} /></div>
+      <PhotoField name="photo" label="Photo (optional)" media={photo} hint="A landscape photo of people doing this kind of work, ideally from our own events or alumni. Only use photos you have permission to use." />
+    </section>
+    <section class="card form-grid">
+      <div class="f" style="max-width:200px"><label for="f-order">Order on the page</label><input id="f-order" type="number" min="0" name="sort_order" value={v('sort_order')} /></div>
+      <label class="check"><input type="checkbox" name="visible" checked={Boolean(f.visible)} /> Show this field on the page</label>
+    </section>
+    <div class="form-actions"><button class="btn btn-primary" type="submit">Save changes</button><a class="btn btn-ghost" href="/admin/fields">Cancel</a></div>
+  </form>
+</Admin>

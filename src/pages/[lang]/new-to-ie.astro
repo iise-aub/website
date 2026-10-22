@@ -20,7 +20,9 @@ const arrow = lang === 'ar' ? '←' : '→';
     <div class="globe" aria-hidden="true"><LogoGlobe /></div>
   </div>
   <TextSection lang={lang} title={tx('what_title')} body={tx('what_body')} placeholder={ph('what_body')} id="what" />
-  <TextSection lang={lang} title={tx('fields_title')} body={tx('fields_body')} placeholder={ph('fields_body')} tone="tint" id="fields" />
+  <TextSection lang={lang} title={tx('fields_title')} body={tx('fields_body')} placeholder={ph('fields_body')} tone="tint" id="fields">
+    <a class="btn btn-primary" href={`/${lang}/fields`}>{t(lang, 'fExplore')} <span class="arrow" aria-hidden="true">{arrow}</span></a>
+  </TextSection>
   <TextSection lang={lang} title={tx('aub_title')} body={tx('aub_body')} placeholder={ph('aub_body')} id="aub" />
   <TextSection lang={lang} title={tx('join_title')} body={tx('join_text')} tone="navy" id="join">
     <div class="actions">

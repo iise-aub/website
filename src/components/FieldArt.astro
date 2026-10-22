@@ -1,0 +1,112 @@
+---
+// Illustrations for the IE fields, drawn in the IISE palette. Decorative (aria-hidden).
+// Each scene sits on a soft round backdrop; one small amber accent per scene for warmth.
+interface Props { slug: string; class?: string }
+const { slug, class: cls } = Astro.props;
+const N = '#1a3668', S = '#4c6589', L = '#68809c', P = '#cdd6e2', W = '#ffffff', A = '#f2b46b';
+---
+<svg class:list={['field-art', cls]} viewBox="0 0 160 120" aria-hidden="true" focusable="false">
+  <ellipse cx="80" cy="62" rx="70" ry="50" fill="#e8edf3" />
+  <ellipse cx="80" cy="104" rx="52" ry="5" fill={P} opacity="0.7" />
+  {slug === 'supply-chain' && (
+    <g>
+      <path d="M22 86 Q50 40 80 62 T140 34" fill="none" stroke={L} stroke-width="2.5" stroke-dasharray="4 5" stroke-linecap="round" />
+      <circle cx="22" cy="86" r="5" fill={N} /><circle cx="140" cy="34" r="5" fill={A} />
+      <rect x="48" y="66" width="44" height="26" rx="3" fill={N} /><rect x="92" y="74" width="20" height="18" rx="3" fill={S} />
+      <rect x="96" y="77" width="10" height="7" rx="1.5" fill="#cfe0f2" />
+      <circle cx="60" cy="94" r="6" fill="#2b2f36" /><circle cx="60" cy="94" r="2.5" fill={P} />
+      <circle cx="102" cy="94" r="6" fill="#2b2f36" /><circle cx="102" cy="94" r="2.5" fill={P} />
+      <rect x="54" y="52" width="14" height="14" fill={A} stroke={N} stroke-width="1.5" /><rect x="70" y="56" width="12" height="10" fill={W} stroke={N} stroke-width="1.5" />
+      <path d="M61 52v14M54 59h14" stroke={N} stroke-width="1.2" />
+    </g>
+  )}
+  {slug === 'manufacturing' && (
+    <g>
+      <path d="M26 96V58l20 12V58l20 12V58l20 12V44h14v52Z" fill={N} />
+      <rect x="104" y="30" width="8" height="18" fill={S} />
+      <circle cx="108" cy="22" r="5" fill={P} /><circle cx="116" cy="15" r="4" fill={P} opacity="0.7" />
+      <rect x="34" y="80" width="10" height="10" fill="#cfe0f2" /><rect x="54" y="80" width="10" height="10" fill="#cfe0f2" /><rect x="74" y="80" width="10" height="10" fill={A} />
+      <g transform="translate(124 74)">
+        <circle r="14" fill={L} /><circle r="5" fill="#e8edf3" />
+        {[0, 45, 90, 135, 180, 225, 270, 315].map((a) => <rect x="-3" y="-19" width="6" height="7" rx="1" fill={L} transform={`rotate(${a})`} />)}
+      </g>
+    </g>
+  )}
+  {slug === 'quality' && (
+    <g>
+      <rect x="30" y="30" width="72" height="62" rx="6" fill={W} stroke={P} stroke-width="2" />
+      <path d="M38 76 L52 66 L64 72 L78 52 L94 46" fill="none" stroke={S} stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+      <path d="M38 50h56" stroke={A} stroke-width="1.5" stroke-dasharray="3 3" />
+      <circle cx="108" cy="70" r="20" fill="#ffffffcc" stroke={N} stroke-width="5" />
+      <path d="M99 70l6 6 12-13" fill="none" stroke={N} stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+      <rect x="120" y="84" width="22" height="8" rx="4" fill={N} transform="rotate(42 122 86)" />
+    </g>
+  )}
+  {slug === 'data' && (
+    <g>
+      <rect x="30" y="70" width="12" height="24" rx="2" fill={L} /><rect x="48" y="56" width="12" height="38" rx="2" fill={S} />
+      <rect x="66" y="42" width="12" height="52" rx="2" fill={N} /><rect x="84" y="62" width="12" height="32" rx="2" fill={A} />
+      <path d="M26 96h76" stroke={N} stroke-width="2" />
+      <g stroke={S} stroke-width="1.8"><path d="M112 40l18 14M112 40l4 30M130 54l-14 16M130 54l10 22M116 70l24 6" /></g>
+      {[[112, 40], [130, 54], [116, 70], [140, 76]].map(([x, y], i) => <circle cx={x} cy={y} r={i === 1 ? 6 : 4.5} fill={i === 1 ? A : N} stroke={W} stroke-width="1.5" />)}
+    </g>
+  )}
+  {slug === 'healthcare' && (
+    <g>
+      <rect x="44" y="34" width="56" height="60" rx="5" fill={W} stroke={P} stroke-width="2" />
+      <rect x="64" y="42" width="16" height="40" rx="3" fill={N} /><rect x="52" y="54" width="40" height="16" rx="3" fill={N} />
+      <path d="M18 74h22l6-12 8 26 7-14h10" fill="none" stroke={A} stroke-width="3" stroke-linecap="round" stroke-linejoin="round" transform="translate(0 4)" />
+      <path d="M104 78h12l5-10 7 20 5-10h12" fill="none" stroke={S} stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+    </g>
+  )}
+  {slug === 'consulting' && (
+    <g>
+      <rect x="34" y="26" width="80" height="54" rx="4" fill={W} stroke={N} stroke-width="3" />
+      <path d="M74 80v14M60 96h28" stroke={N} stroke-width="3" stroke-linecap="round" />
+      <path d="M44 68l16-12 12 6 18-20" fill="none" stroke={S} stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+      <path d="M84 42h8v8" fill="none" stroke={S} stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+      <circle cx="128" cy="62" r="9" fill={N} /><path d="M114 96c0-14 6-22 14-22s14 8 14 22Z" fill={N} />
+      <path d="M118 80l-10-10" stroke={A} stroke-width="3" stroke-linecap="round" />
+    </g>
+  )}
+  {slug === 'human-factors' && (
+    <g>
+      <circle cx="72" cy="36" r="9" fill={N} />
+      <path d="M70 46c-8 2-12 10-12 20v10h22l8 18h8l-8-24H70V60" fill={N} />
+      <path d="M52 70h4v26h-4zM50 76h30" stroke={S} stroke-width="4" stroke-linecap="round" />
+      <rect x="96" y="52" width="36" height="24" rx="3" fill={W} stroke={S} stroke-width="3" /><path d="M114 76v12M104 90h20" stroke={S} stroke-width="3" stroke-linecap="round" />
+      <path d="M86 44a26 26 0 0 1 24 4" fill="none" stroke={A} stroke-width="2.5" stroke-dasharray="3 4" stroke-linecap="round" />
+    </g>
+  )}
+  {slug === 'project-management' && (
+    <g>
+      <rect x="28" y="30" width="96" height="64" rx="5" fill={W} stroke={P} stroke-width="2" />
+      <path d="M28 44h96" stroke={P} stroke-width="2" />
+      <rect x="36" y="52" width="34" height="7" rx="3.5" fill={N} /><rect x="56" y="64" width="30" height="7" rx="3.5" fill={S} />
+      <rect x="78" y="76" width="36" height="7" rx="3.5" fill={L} />
+      <path d="M108 52V22" stroke={N} stroke-width="3" stroke-linecap="round" /><path d="M108 22h22l-6 6 6 6h-22Z" fill={A} />
+      <circle cx="36" cy="37" r="2.5" fill={L} /><circle cx="44" cy="37" r="2.5" fill={L} /><circle cx="52" cy="37" r="2.5" fill={L} />
+    </g>
+  )}
+  {slug === 'finance' && (
+    <g>
+      <ellipse cx="50" cy="88" rx="18" ry="6" fill={S} /><rect x="32" y="74" width="36" height="14" fill={S} /><ellipse cx="50" cy="74" rx="18" ry="6" fill={L} />
+      <ellipse cx="50" cy="70" rx="18" ry="6" fill={S} /><rect x="32" y="58" width="36" height="12" fill={S} /><ellipse cx="50" cy="58" rx="18" ry="6" fill={A} />
+      <path d="M80 88l14-18 12 8 22-34" fill="none" stroke={N} stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+      <path d="M118 44h10v10" fill="none" stroke={N} stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+    </g>
+  )}
+  {slug === 'energy' && (
+    <g>
+      <circle cx="122" cy="30" r="10" fill={A} />
+      {[0, 60, 120, 180, 240, 300].map((a) => <rect x="120.5" y="12" width="3" height="6" rx="1.5" fill={A} transform={`rotate(${a} 122 30)`} />)}
+      <path d="M62 96L66 46h4l4 50Z" fill={L} />
+      <g transform="translate(68 44)">
+        <circle r="4" fill={N} />
+        {[0, 120, 240].map((a) => <path d="M0-3C5-14 4-26 0-30-4-26-5-14 0-3Z" fill={N} transform={`rotate(${a})`} />)}
+      </g>
+      <path d="M96 96c0-22 14-36 34-36-2 22-14 36-34 36Z" fill={S} /><path d="M98 94c8-12 16-20 28-28" stroke={W} stroke-width="2" fill="none" stroke-linecap="round" />
+    </g>
+  )}
+</svg>
+<style>.field-art { display: block; width: 100%; height: auto; }</style>

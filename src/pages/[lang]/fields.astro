@@ -1,0 +1,234 @@
+---
+// "Where can IE take you?": ten fields of industrial engineering, a fun quiz, and a section per field.
+// Field texts and photos are edited in Panel → IE fields; the quiz questions live in src/lib/fields.ts.
+import Base from '../../layouts/Base.astro';
+import T from '../../components/T.astro';
+import PageHead from '../../components/PageHead.astro';
+import FieldArt from '../../components/FieldArt.astro';
+import Rich from '../../components/Rich.astro';
+import { isLang, pick, t } from '../../lib/i18n';
+import { QUIZ, loadFieldsPage, type FieldRow } from '../../lib/fields';
+
+const { lang } = Astro.params;
+if (!isLang(lang)) return Astro.rewrite('/404');
+const { settings, text, fields } = await loadFieldsPage();
+const tx = (block: string) => pick(text[block], 'text', lang);
+const lines = (f: FieldRow, k: string) => pick(f, k, lang).text.split('\n').map((s) => s.trim()).filter(Boolean);
+const arrow = lang === 'ar' ? '←' : '→';
+// Quiz data for the browser: answers point at field slugs; results show the field's title and tagline.
+const quiz = QUIZ.map((q) => ({ q: q.q[lang], a: q.a.map((a) => ({ t: a[lang], pts: a.pts })) }));
+const meta = Object.fromEntries(fields.map((f) => [f.slug, { title: pick(f, 'title', lang).text, tagline: pick(f, 'tagline', lang).text }]));
+const labels = { question: t(lang, 'fQuestion'), result: t(lang, 'fResult'), also: t(lang, 'fAlso'), read: t(lang, 'fRead'), again: t(lang, 'fAgain'), arrow };
+---
+<Base lang={lang} title={tx('title').text} description={tx('intro').text} settings={settings}>
+  <PageHead lang={lang} eyebrow={tx('eyebrow')} title={tx('title')} intro={tx('intro')} />
+
+  <!-- At a glance -->
+  <section class="wrap glance" aria-labelledby="glance-h">
+    <h2 id="glance-h" class="visually-hidden">{t(lang, 'fAtGlance')}</h2>
+    <ul class="glance-grid">
+      {fields.map((f, i) => (
+        <li>
+          <a class="glance-card" href={`#${f.slug}`}>
+            <span class="g-art">{f.photo_key ? <img src={`/media/${f.photo_key}-480.webp`} alt="" loading="lazy" /> : <FieldArt slug={f.slug} />}</span>
+            <span class="g-num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+            <span class="g-title"><T v={pick(f, 'title', lang)} page={lang} /></span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <!-- Quiz -->
+  <section class="wrap quiz-wrap" aria-labelledby="quiz-h">
+    <div class="quiz" data-quiz data-quiz-json={JSON.stringify(quiz)} data-meta={JSON.stringify(meta)} data-labels={JSON.stringify(labels)} hidden>
+      <div class="quiz-head">
+        <p class="q-eyebrow">🧭 {t(lang, 'fQuizKicker')}</p>
+        <h2 id="quiz-h"><T v={tx('quiz_title')} page={lang} /></h2>
+        <T v={tx('quiz_intro')} page={lang} as="p" class="q-intro" />
+      </div>
+      <div class="quiz-body" data-quiz-body aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- One section per field -->
+  {fields.map((f, i) => {
+    const tasks = lines(f, 'tasks');
+    const roles = lines(f, 'roles');
+    const loveIf = pick(f, 'love_if', lang);
+    const fact = pick(f, 'fun_fact', lang);
+    return (
+      <section class:list={['field', i % 2 && 'flip']} id={f.slug} aria-labelledby={`${f.slug}-h`}>
+        <div class="wrap field-grid">
+          <div class="f-art">
+            {f.photo_key
+              ? <img class="f-photo" src={`/media/${f.photo_key}-960.webp`} srcset={`/media/${f.photo_key}-480.webp 480w, /media/${f.photo_key}-960.webp 960w`} sizes="(min-width: 900px) 440px, 90vw" alt="" loading="lazy" />
+              : <FieldArt slug={f.slug} />}
+          </div>
+          <div class="f-text">
+            <p class="f-num"><span dir="ltr">{String(i + 1).padStart(2, '0')} / {String(fields.length).padStart(2, '0')}</span></p>
+            <h2 id={`${f.slug}-h`}><T v={pick(f, 'title', lang)} page={lang} /></h2>
+            <T v={pick(f, 'tagline', lang)} page={lang} as="p" class="f-tagline" />
+            <Rich v={pick(f, 'body', lang)} page={lang} />
+            {tasks.length > 0 && <>
+              <h3>{t(lang, 'fWhatYoudDo')}</h3>
+              <ul class="tasks">{tasks.map((x) => <li>{x}</li>)}</ul>
+            </>}
+            {roles.length > 0 && <>
+              <h3>{t(lang, 'fRoles')}</h3>
+              <ul class="roles">{roles.map((x) => <li>{x}</li>)}</ul>
+            </>}
+            <div class="callouts">
+              {loveIf.text && <p class="callout love"><span class="c-label">💙 {t(lang, 'fLoveIf')}</span> <T v={loveIf} page={lang} /></p>}
+              {fact.text && <p class="callout fact"><span class="c-label">💡 {t(lang, 'fFunFact')}</span> <T v={fact} page={lang} /></p>}
+            </div>
+            {f.slug === 'supply-chain' && <a class="try" href={`/${lang}/game`}>{t(lang, 'fTryPuzzle')} <span aria-hidden="true">{arrow}</span></a>}
+          </div>
+        </div>
+      </section>
+    );
+  })}
+
+  <section class="wrap outro">
+    <div class="outro-card">
+      <T v={tx('outro')} page={lang} as="p" />
+      <div class="outro-actions">
+        <a class="btn btn-light" href={`/${lang}/events`}>{t(lang, 'seeAllEvents')} <span class="arrow" aria-hidden="true">{arrow}</span></a>
+        <a class="btn btn-outline-light" href={`/${lang}/alumni`}>{t(lang, 'nav_alumni')}</a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<script>
+  type Q = { q: string; a: { t: string; pts: string[] }[] };
+  document.querySelectorAll<HTMLElement>('[data-quiz]').forEach((root) => {
+    const quiz = JSON.parse(root.dataset.quizJson!) as Q[];
+    const meta = JSON.parse(root.dataset.meta!) as Record<string, { title: string; tagline: string }>;
+    const L = JSON.parse(root.dataset.labels!) as Record<string, string>;
+    const body = root.querySelector<HTMLElement>('[data-quiz-body]')!;
+    const order = Object.keys(meta); // tie-break: page order
+    let step = 0;
+    let score: Record<string, number> = {};
+    const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
+
+    function showQuestion() {
+      const q = quiz[step];
+      body.innerHTML = `
+        <div class="q-progress" aria-hidden="true"><span style="width:${(step / quiz.length) * 100}%"></span></div>
+        <p class="q-count">${L.question} <span dir="ltr">${step + 1} / ${quiz.length}</span></p>
+        <h3 class="q-text">${esc(q.q)}</h3>
+        <div class="q-answers">${q.a.map((a, i) => `<button type="button" class="q-answer" data-i="${i}">${esc(a.t)}</button>`).join('')}</div>`;
+      body.querySelectorAll<HTMLButtonElement>('.q-answer').forEach((b) => b.addEventListener('click', () => {
+        for (const p of q.a[Number(b.dataset.i)].pts) score[p] = (score[p] ?? 0) + 1;
+        step++;
+        step < quiz.length ? showQuestion() : showResult();
+      }));
+      (body.querySelector('.q-answer') as HTMLElement | null)?.focus({ preventScroll: true });
+    }
+
+    function showResult() {
+      const ranked = order.filter((s) => meta[s]).sort((x, y) => (score[y] ?? 0) - (score[x] ?? 0) || order.indexOf(x) - order.indexOf(y));
+      const [top, second] = ranked;
+      body.innerHTML = `
+        <div class="q-progress" aria-hidden="true"><span style="width:100%"></span></div>
+        <p class="q-count">${L.result}</p>
+        <h3 class="q-result">${esc(meta[top].title)}</h3>
+        <p class="q-tag">${esc(meta[top].tagline)}</p>
+        <div class="q-actions">
+          <a class="btn btn-light" href="#${top}">${L.read} <span aria-hidden="true">${L.arrow}</span></a>
+          <button type="button" class="btn btn-outline-light" data-again>${L.again}</button>
+        </div>
+        ${second ? `<p class="q-also">${L.also} <a href="#${second}">${esc(meta[second].title)}</a></p>` : ''}`;
+      body.querySelector('[data-again]')!.addEventListener('click', () => { step = 0; score = {}; showQuestion(); });
+      (body.querySelector('.q-result') as HTMLElement).setAttribute('tabindex', '-1');
+      (body.querySelector('.q-result') as HTMLElement).focus({ preventScroll: true });
+    }
+
+    root.hidden = false;
+    showQuestion();
+  });
+</script>
+
+<style>
+  /* At a glance */
+  .glance { padding-block: 12px 8px; }
+  .glance-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(min(46%, 150px), 1fr)); }
+  .glance-card {
+    position: relative; display: grid; gap: 4px; padding: 10px 10px 12px; height: 100%; border-radius: var(--radius);
+    background: var(--white); border: 1px solid var(--steel-200); text-decoration: none; color: var(--navy-900);
+    transition: transform 200ms var(--ease-out), border-color 200ms ease, box-shadow 300ms var(--ease-out);
+  }
+  @media (hover: hover) and (pointer: fine) { .glance-card:hover { transform: translateY(-3px); border-color: var(--navy-800); box-shadow: var(--shadow); color: var(--navy-900); } }
+  .glance-card:active { transform: scale(0.98); }
+  .g-art { display: block; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 10px; }
+  .g-art img { width: 100%; height: 100%; object-fit: cover; }
+  .g-num { position: absolute; top: 14px; inset-inline-start: 14px; font-size: 0.72rem; font-weight: 800; color: var(--slate-500); font-family: var(--font-latin); }
+  .g-title { font-weight: 700; font-size: 0.98rem; line-height: 1.25; }
+
+  /* Quiz */
+  .quiz-wrap { padding-block: 28px; }
+  .quiz {
+    position: relative; overflow: hidden; color: #fff; border-radius: calc(var(--radius) + 6px); padding: 26px;
+    background: radial-gradient(120% 140% at 100% 0%, var(--slate-600) 0%, var(--navy-800) 45%, var(--navy-950) 100%);
+    display: grid; gap: 18px;
+  }
+  @media (min-width: 900px) { .quiz { grid-template-columns: 0.8fr 1.2fr; padding: 36px 44px; gap: 40px; align-items: start; } }
+  .q-eyebrow { margin: 0 0 6px; font-weight: 600; color: var(--steel-300); }
+  .quiz h2 { color: #fff; font-size: clamp(1.7rem, 4.5vw, 2.4rem); margin-bottom: 8px; }
+  .q-intro { color: var(--steel-200); margin: 0; }
+  .quiz-body { min-height: 260px; }
+  .quiz :global(.q-progress) { height: 6px; border-radius: 3px; background: rgb(255 255 255 / 0.15); overflow: hidden; margin-bottom: 14px; }
+  .quiz :global(.q-progress span) { display: block; height: 100%; background: #f2b46b; border-radius: 3px; transition: width 350ms var(--ease-out); }
+  .quiz :global(.q-count) { margin: 0 0 6px; color: var(--steel-300); font-weight: 600; font-size: 0.9rem; }
+  .quiz :global(.q-text) { color: #fff; font-size: 1.45rem; margin-bottom: 14px; }
+  .quiz :global(.q-answers) { display: grid; gap: 10px; }
+  @media (min-width: 560px) { .quiz :global(.q-answers) { grid-template-columns: 1fr 1fr; } }
+  .quiz :global(.q-answer) {
+    text-align: start; font: inherit; font-weight: 600; color: var(--navy-900); background: #fff; border: 2px solid transparent;
+    border-radius: 14px; padding: 14px 16px; min-height: 56px; cursor: pointer; transition: transform 160ms var(--ease-out), border-color 160ms ease;
+  }
+  .quiz :global(.q-answer:hover) { border-color: #f2b46b; }
+  .quiz :global(.q-answer:active) { transform: scale(0.97); }
+  .quiz :global(.q-result) { color: #fff; font-size: clamp(1.8rem, 5vw, 2.6rem); margin: 0 0 4px; }
+  .quiz :global(.q-result:focus) { outline: none; }
+  .quiz :global(.q-tag) { color: var(--steel-200); font-size: 1.1rem; }
+  .quiz :global(.q-actions) { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+  .quiz :global(.q-also) { color: var(--steel-200); margin: 0; }
+  .quiz :global(.q-also a) { color: #fff; font-weight: 700; }
+  @media (prefers-reduced-motion: no-preference) {
+    .quiz :global(.q-text), .quiz :global(.q-answers), .quiz :global(.q-result) { animation: q-in 320ms var(--ease-out) both; }
+  }
+  @keyframes q-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  /* Field sections */
+  .field { padding-block: 44px; scroll-margin-top: 72px; }
+  .field:nth-of-type(even) { background: var(--steel-50); }
+  .field-grid { display: grid; gap: 22px; align-items: center; }
+  @media (min-width: 900px) {
+    .field-grid { grid-template-columns: 0.85fr 1.15fr; gap: 56px; }
+    .flip .f-art { order: 2; }
+  }
+  .f-art { max-width: 440px; width: 100%; justify-self: center; }
+  .f-photo { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radius); }
+  .f-num { margin: 0 0 6px; font-weight: 800; color: var(--slate-500); font-family: var(--font-latin); letter-spacing: 0.08em; }
+  .field h2 { font-size: clamp(1.8rem, 5vw, 2.5rem); margin-bottom: 6px; }
+  .f-tagline { font-size: 1.2rem; font-weight: 600; color: var(--slate-600); margin-bottom: 14px; }
+  .field h3 { font-size: 1.05rem; margin: 18px 0 8px; color: var(--navy-900); }
+  .tasks { margin: 0; padding-inline-start: 20px; display: grid; gap: 4px; color: var(--navy-900); }
+  .roles { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+  .roles li { padding: 4px 12px; border-radius: 999px; background: var(--white); border: 1px solid var(--steel-200); font-size: 0.92rem; font-weight: 600; color: var(--navy-800); }
+  .callouts { display: grid; gap: 10px; margin-top: 18px; }
+  @media (min-width: 640px) { .callouts { grid-template-columns: 1fr 1fr; } }
+  .callout { margin: 0; padding: 14px 16px; border-radius: 14px; font-size: 0.98rem; color: var(--navy-900); }
+  .c-label { display: block; font-weight: 800; margin-bottom: 4px; }
+  .love { background: #eaf1fb; }
+  .fact { background: #fdf3e4; }
+  .try { display: inline-flex; gap: 6px; margin-top: 16px; font-weight: 700; }
+
+  .outro { padding-block: 40px 8px; }
+  .outro-card { display: grid; gap: 16px; align-items: center; color: #fff; background: linear-gradient(135deg, var(--navy-800), var(--navy-950)); border-radius: calc(var(--radius) + 6px); padding: 28px; }
+  .outro-card p { margin: 0; color: var(--steel-200); font-size: 1.1rem; max-width: 56ch; }
+  .outro-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+  @media (min-width: 820px) { .outro-card { grid-template-columns: 1fr auto; padding: 32px 40px; } }
+</style>
