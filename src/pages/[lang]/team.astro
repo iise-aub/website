@@ -1,0 +1,132 @@
+---
+// Meet the cabinet and the teams, and how to join a team. All from the panel (People, Teams, Page text).
+import Base from '../../layouts/Base.astro';
+import T from '../../components/T.astro';
+import PageHead from '../../components/PageHead.astro';
+import Meridians from '../../components/Meridians.astro';
+import { isLang, pick, t } from '../../lib/i18n';
+import { loadTeamPage } from '../../lib/db';
+
+const { lang } = Astro.params;
+if (!isLang(lang)) return Astro.rewrite('/404');
+
+const { settings, text, cabinet, teams } = await loadTeamPage();
+const tx = (block: string) => pick(text[block], 'text', lang);
+const ph = (block: string) => Boolean(text[block]?.needs_content);
+const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+const arrow = lang === 'ar' ? '←' : '→';
+---
+<Base lang={lang} title={tx('title').text} description={tx('intro').text} settings={settings}>
+  <PageHead lang={lang} eyebrow={tx('eyebrow')} title={tx('title')} intro={tx('intro')} />
+
+  <section class="wrap block" aria-labelledby="cabinet-title">
+    <h2 id="cabinet-title"><T v={tx('cabinet_title')} page={lang} /></h2>
+    <ul class="people">
+      {cabinet.map((p) => {
+        const name = pick(p, 'name', lang);
+        const bio = pick(p, 'bio', lang);
+        return (
+          <li class="person">
+            <div class="avatar">
+              {p.photo_key
+                ? <img src={`/media/${p.photo_key}-480.webp`} alt="" width="480" height="480" loading="lazy" decoding="async" />
+                : <span class="monogram" aria-hidden="true"><Meridians class="monogram-globe" /><span>{initials(p.name_en)}</span></span>}
+            </div>
+            <div class="person-text">
+              <T v={pick(p, 'position', lang)} page={lang} as="p" class="position" />
+              <h3><T v={name} page={lang} /></h3>
+              {bio.text && <T v={bio} page={lang} as="p" class="bio" />}
+              {p.linkedin_opt_in && p.linkedin_url ? (
+                <a class="linkedin" href={p.linkedin_url} target="_blank" rel="noopener">
+                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5ZM3 9.75h4V21H3V9.75Zm6.5 0h3.8v1.6h.06c.53-1 1.83-2.05 3.77-2.05 4.03 0 4.77 2.6 4.77 6V21h-4v-5c0-1.2 0-2.75-1.7-2.75-1.7 0-1.95 1.3-1.95 2.66V21h-4V9.75Z"/></svg>
+                  <span class="visually-hidden">{name.text} </span>{t(lang, 'linkedinOf')}
+                </a>
+              ) : null}
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  </section>
+
+  <section class="teams-band" aria-labelledby="teams-title">
+    <div class="wrap block">
+      <h2 id="teams-title"><T v={tx('teams_title')} page={lang} /></h2>
+      <T v={tx('teams_intro')} page={lang} as="p" class="section-intro" />
+      <ul class="teams">
+        {teams.map((tm, i) => {
+          const desc = pick(tm, 'description', lang);
+          const join = pick(tm, 'how_to_join', lang);
+          return (
+            <li class="team">
+              <span class="team-num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+              <h3><T v={pick(tm, 'name', lang)} page={lang} /></h3>
+              {tm.is_placeholder
+                ? <p class="team-desc"><span class="ph-badge">{t(lang, 'toBeWritten')}</span></p>
+                : desc.text && <T v={desc} page={lang} as="p" class="team-desc" />}
+              {join.text && <T v={join} page={lang} as="p" class="team-join" />}
+              {tm.leads.length > 0 && (
+                <p class="team-leads">{t(lang, 'teamLeads')} {tm.leads.map((l, k) => <>{k > 0 && ', '}<T v={pick(l, 'name', lang)} page={lang} /></>)}</p>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  </section>
+
+  <section class="wrap block" aria-labelledby="join-team-title">
+    <div class="join-team">
+      <div>
+        <h2 id="join-team-title"><T v={tx('join_title')} page={lang} /></h2>
+        <T v={tx('join_text')} page={lang} as="p" placeholder={ph('join_text')} />
+      </div>
+      {settings.team_application_url
+        ? <a class="btn btn-light btn-lg" href={settings.team_application_url} target="_blank" rel="noopener">{t(lang, 'applyTeam')} <span class="arrow" aria-hidden="true">{arrow}</span><span class="visually-hidden"> {t(lang, 'newTab')}</span></a>
+        : <span class="ph-badge">{t(lang, 'linkComing')}</span>}
+    </div>
+  </section>
+</Base>
+
+<style>
+  .block { padding-block: 40px; }
+  .block h2 { font-size: clamp(1.9rem, 5vw, 2.6rem); }
+  .section-intro { color: var(--ink-soft); max-width: 56ch; margin-bottom: 24px; }
+
+  .people { list-style: none; margin: 24px 0 0; padding: 0; display: grid; gap: 24px 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); }
+  @media (min-width: 720px) { .people { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 28px 20px; } }
+  .person { display: grid; gap: 14px; align-content: start; }
+  .avatar { aspect-ratio: 1; border-radius: var(--radius); overflow: hidden; background: var(--steel-100); }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .monogram {
+    position: relative; display: grid; place-items: center; width: 100%; height: 100%; overflow: hidden;
+    background: radial-gradient(120% 100% at 25% 15%, var(--slate-500) 0%, var(--navy-800) 60%, var(--navy-950) 100%);
+  }
+  .monogram :global(.monogram-globe) { width: 130%; color: rgb(255 255 255 / 0.1); inset-inline-start: -15%; top: -10%; }
+  .monogram > span { position: relative; color: #fff; font-weight: 800; font-size: clamp(2.6rem, 8vw, 3.4rem); letter-spacing: 0.04em; font-family: var(--font-latin); }
+  .position { margin: 0; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--slate-600); }
+  :lang(ar) .position { letter-spacing: 0; text-transform: none; font-size: 0.95rem; }
+  .person h3 { font-size: clamp(1.1rem, 3.6vw, 1.35rem); margin: 2px 0 6px; }
+  .bio { color: var(--ink-soft); font-size: 1rem; margin-bottom: 8px; }
+  .linkedin { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; text-decoration: none; min-height: 32px; }
+  .linkedin:hover { text-decoration: underline; }
+
+  .teams-band { background: var(--steel-50); border-block: 1px solid var(--steel-200); margin-block: 24px; }
+  .teams { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+  .team { position: relative; background: var(--white); border: 1px solid var(--steel-200); border-radius: var(--radius); padding: 22px; }
+  .team-num { font-weight: 800; font-size: 0.9rem; letter-spacing: 0.1em; color: var(--steel-400); font-family: var(--font-latin); }
+  .team h3 { font-size: 1.45rem; margin: 6px 0 8px; }
+  .team-desc { color: var(--ink-soft); margin-bottom: 8px; }
+  .team-join { font-size: 0.98rem; color: var(--navy-900); }
+  .team-leads { margin: 8px 0 0; font-size: 0.95rem; color: var(--grey-600); }
+
+  .join-team {
+    position: relative; overflow: hidden; display: grid; gap: 18px; align-items: center; color: #fff;
+    background: linear-gradient(135deg, var(--navy-800), var(--navy-950)); border-radius: calc(var(--radius) + 6px); padding: 32px 26px;
+  }
+  .join-team h2 { color: #fff; margin-bottom: 8px; }
+  .join-team p { color: var(--steel-200); margin: 0; max-width: 52ch; }
+  .join-team :global(.ph-text) { color: var(--navy-900); }
+  @media (min-width: 820px) { .join-team { grid-template-columns: 1fr auto; padding: 40px 44px; } }
+  .btn-lg { min-height: 54px; padding-inline: 1.6em; }
+</style>

@@ -1,0 +1,87 @@
+---
+import Admin from '../../layouts/Admin.astro';
+import { db } from '../../lib/db';
+
+const d = db();
+const nowIso = new Date().toISOString();
+const today = nowIso.slice(0, 10);
+const [upcoming, ms, msPh, msNoSource, textTodo, settingsEmpty, log, teamTodo, peopleTodo] = await d.batch([
+  d.prepare("SELECT COUNT(*) AS n FROM events WHERE status = 'published' AND ends_at > ?").bind(nowIso),
+  d.prepare('SELECT COUNT(*) AS n FROM milestones WHERE visible = 1'),
+  d.prepare('SELECT id, title_en FROM milestones WHERE is_placeholder = 1 ORDER BY year, sort_order'),
+  d.prepare("SELECT id, title_en FROM milestones WHERE is_placeholder = 0 AND TRIM(source_note) = ''"),
+  d.prepare('SELECT page, block, label FROM page_text WHERE needs_content = 1 ORDER BY page, sort_order'),
+  d.prepare("SELECT key, label FROM settings WHERE TRIM(value) = '' AND key NOT IN ('linkedin_url', 'podcast_url', 'crn_term_ar') ORDER BY sort_order"),
+  d.prepare('SELECT at, user_email, entity, action, summary FROM change_log ORDER BY id DESC LIMIT 12'),
+  d.prepare('SELECT id, name_en AS title_en FROM teams WHERE is_placeholder = 1 AND visible = 1 ORDER BY sort_order'),
+  d.prepare(`SELECT p.id, p.name_en AS title_en, (p.photo_media_id IS NULL) AS no_photo, (TRIM(p.bio_en) = '') AS no_bio
+    FROM people p JOIN person_roles r ON r.person_id = p.id AND r.role IN ('cabinet', 'member') AND (r.end_date IS NULL OR r.end_date = '' OR r.end_date >= ?)
+    WHERE p.photo_media_id IS NULL OR TRIM(p.bio_en) = '' GROUP BY p.id ORDER BY MIN(r.sort_order)`).bind(today),
+]);
+const teams = teamTodo.results as Item[];
+const people = peopleTodo.results as (Item & { no_photo: number; no_bio: number })[];
+const n = (r: D1Result) => Number((r.results[0] as { n: number })?.n ?? 0);
+type Item = { id?: number; title_en?: string; page?: string; block?: string; label?: string; key?: string };
+const placeholders = msPh.results as Item[];
+const noSource = msNoSource.results as Item[];
+const texts = textTodo.results as Item[];
+const emptySettings = settingsEmpty.results as Item[];
+const todoCount = placeholders.length + noSource.length + texts.length + emptySettings.length + teams.length + people.length;
+const when = (iso: string) => new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Beirut', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+const entityLabel: Record<string, string> = { events: 'event', milestones: 'history station', page_text: 'page text', settings: 'settings', media: 'photo', users: 'access', people: 'person', teams: 'team', sponsors: 'sponsor' };
+---
+<Admin title="Overview" active="overview">
+  <div class="page-head">
+    <div>
+      <h1>Hello 👋</h1>
+      <p>Everything on the website comes from here. Changes appear on the live site as soon as you save.</p>
+    </div>
+  </div>
+
+  <div class="stats">
+    <a class="stat" href="/admin/events"><strong>{n(upcoming)}</strong><span>upcoming events</span></a>
+    <a class="stat" href="/admin/history"><strong>{n(ms)}</strong><span>stations on the history map</span></a>
+    <a class="stat" href="#todo"><strong>{todoCount}</strong><span>things still to fill in</span></a>
+  </div>
+
+  <section class="card" id="todo" aria-labelledby="todo-h">
+    <h2 id="todo-h">Still to fill in</h2>
+    <p>These show on the site as yellow “Placeholder” marks until someone completes them.</p>
+    {todoCount === 0 && <p class="empty">Nothing missing. 🎉</p>}
+    {emptySettings.length > 0 && <>
+      <p class="section-label">Settings</p>
+      <ul class="list todo">{emptySettings.map((s) => <li><a href="/admin/settings">{s.label}</a></li>)}</ul>
+    </>}
+    {placeholders.length > 0 && <>
+      <p class="section-label">History stations not yet confirmed</p>
+      <ul class="list todo">{placeholders.map((m) => <li><a href={`/admin/history/${m.id}`}>{m.title_en}</a> <span class="badge badge-warn">needs date + source</span></li>)}</ul>
+    </>}
+    {noSource.length > 0 && <>
+      <p class="section-label">History stations missing a source</p>
+      <ul class="list todo">{noSource.map((m) => <li><a href={`/admin/history/${m.id}`}>{m.title_en}</a></li>)}</ul>
+    </>}
+    {teams.length > 0 && <>
+      <p class="section-label">Teams without a description</p>
+      <ul class="list todo">{teams.map((x) => <li><a href={`/admin/teams/${x.id}`}>{x.title_en}</a></li>)}</ul>
+    </>}
+    {people.length > 0 && <>
+      <p class="section-label">Cabinet and team leads</p>
+      <ul class="list todo">{people.map((x) => <li><a href={`/admin/people/${x.id}`}>{x.title_en}</a> <span class="badge badge-warn">needs {[x.no_photo && 'photo', x.no_bio && 'bio'].filter(Boolean).join(' + ')}</span></li>)}</ul>
+    </>}
+    {texts.length > 0 && <>
+      <p class="section-label">Page text</p>
+      <ul class="list todo">{texts.map((x) => <li><a href={`/admin/text#${x.page}`}>{x.page}: {x.label}</a></li>)}</ul>
+    </>}
+  </section>
+
+  <section class="card" aria-labelledby="log-h">
+    <h2 id="log-h">Recent changes</h2>
+    {log.results.length === 0 ? <p class="empty">No changes yet.</p> : (
+      <ul class="list log">
+        {(log.results as { at: string; user_email: string; entity: string; action: string; summary: string }[]).map((l) => (
+          <li><span class="list-main"><strong>{l.user_email}</strong> {l.action}d {entityLabel[l.entity] ?? l.entity}{l.summary && <>: {l.summary}</>}</span><time datetime={l.at}>{when(l.at)}</time></li>
+        ))}
+      </ul>
+    )}
+  </section>
+</Admin>

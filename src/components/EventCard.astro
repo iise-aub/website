@@ -1,0 +1,49 @@
+---
+// One event in a list: date block, title, time and place (Beirut time).
+import { pick, t, type Lang } from '../lib/i18n';
+import { formatDate, formatTime } from '../lib/time';
+import type { EventRow } from '../lib/db';
+import T from './T.astro';
+interface Props { lang: Lang; event: EventRow; past?: boolean }
+const { lang, event: e, past = false } = Astro.props;
+const day = formatDate(e.starts_at, lang, { weekday: undefined, month: undefined, day: 'numeric' });
+const month = formatDate(e.starts_at, lang, { weekday: undefined, day: undefined, month: 'short' });
+const weekday = formatDate(e.starts_at, lang, { weekday: 'long', day: undefined, month: undefined });
+const year = formatDate(e.starts_at, lang, { weekday: undefined, day: undefined, month: undefined, year: 'numeric' });
+const location = pick(e, 'location', lang);
+const summary = pick(e, 'summary', lang);
+---
+<article class:list={['ev', past && 'is-past']}>
+  <div class="ev-date" aria-hidden="true"><span class="m">{month}</span><span class="d">{day}</span>{past && <span class="y">{year}</span>}</div>
+  <div class="ev-body">
+    <h3><a href={`/${lang}/events/${e.slug}`}><T v={pick(e, 'title', lang)} page={lang} /></a>
+      {e.is_placeholder ? <span class="ph-badge">{t(lang, 'placeholder')}</span> : null}</h3>
+    <p class="ev-meta">
+      <time datetime={e.starts_at}>{weekday} {!past && <>· {formatTime(e.starts_at, lang)}–{formatTime(e.ends_at, lang)}</>}</time>
+      {location.text && <><span aria-hidden="true"> · </span><T v={location} page={lang} /></>}
+    </p>
+    {summary.text && !past && <T v={summary} page={lang} as="p" class="ev-summary" />}
+  </div>
+</article>
+<style>
+  .ev {
+    position: relative; display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: start;
+    background: var(--white); border: 1px solid var(--steel-200); border-radius: var(--radius); padding: 18px;
+    transition: border-color 200ms ease, box-shadow 300ms var(--ease-out);
+  }
+  @media (hover: hover) and (pointer: fine) { .ev:hover { border-color: var(--steel-300); box-shadow: var(--shadow); } }
+  .ev-date { display: grid; place-items: center; align-content: center; width: 64px; min-height: 72px; border-radius: 12px; background: var(--navy-800); color: #fff; line-height: 1; padding: 8px 0; }
+  .is-past .ev-date { background: var(--steel-100); color: var(--navy-800); }
+  .m { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--steel-300); }
+  :lang(ar) .m { letter-spacing: 0; font-size: 0.8rem; }
+  .is-past .m, .is-past .y { color: var(--grey-600); }
+  .d { font-weight: 800; font-size: 1.9rem; margin-top: 4px; font-family: var(--font-latin); }
+  .y { font-size: 0.72rem; margin-top: 4px; }
+  .ev h3 { font-size: 1.3rem; margin: 0 0 4px; }
+  .ev h3 a { color: var(--navy-800); text-decoration: none; }
+  .ev h3 a::after { content: ''; position: absolute; inset: 0; border-radius: inherit; }
+  .ev h3 a:focus-visible { outline: none; }
+  .ev:has(h3 a:focus-visible) { outline: 3px solid var(--focus); outline-offset: 3px; }
+  .ev-meta { margin: 0; color: var(--ink-soft); font-size: 0.98rem; }
+  .ev-summary { margin: 8px 0 0; color: var(--navy-900); }
+</style>

@@ -1,0 +1,30 @@
+---
+// A titled section of an inner page: heading + rich text from the panel, plus optional actions (slot).
+import T from './T.astro';
+import Rich from './Rich.astro';
+import type { Lang, Localized } from '../lib/i18n';
+interface Props { lang: Lang; title: Localized; body?: Localized; placeholder?: boolean; tone?: 'plain' | 'tint' | 'navy'; id?: string }
+const { lang, title, body, placeholder = false, tone = 'plain', id } = Astro.props;
+const headingId = id ?? `s-${Math.random().toString(36).slice(2, 8)}`;
+---
+<section class:list={['ts', `tone-${tone}`]} aria-labelledby={headingId}>
+  <div class="wrap ts-inner">
+    <h2 id={headingId}><T v={title} page={lang} /></h2>
+    <div class="ts-body">
+      {body?.text && <Rich v={body} page={lang} placeholder={placeholder} />}
+      <slot />
+    </div>
+  </div>
+</section>
+<style>
+  .ts { padding-block: 36px; }
+  .ts-inner { display: grid; gap: 14px 48px; }
+  @media (min-width: 900px) { .ts-inner { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); align-items: start; } }
+  .ts h2 { font-size: clamp(1.7rem, 4.5vw, 2.3rem); margin: 0; }
+  .ts-body { display: grid; gap: 18px; justify-items: start; max-width: 62ch; }
+  .tone-tint { background: var(--steel-50); border-block: 1px solid var(--steel-200); }
+  .tone-navy { background: linear-gradient(135deg, var(--navy-800), var(--navy-950)); color: #fff; }
+  .tone-navy h2 { color: #fff; }
+  .tone-navy :global(.rich), .tone-navy :global(.rich li) { color: var(--steel-200); }
+  .tone-navy :global(.rich li)::before { background: var(--steel-300); }
+</style>

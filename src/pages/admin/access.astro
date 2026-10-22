@@ -1,0 +1,99 @@
+---
+// Cabinet admins give and remove panel access. No developer needed when the cabinet changes.
+import Admin from '../../layouts/Admin.astro';
+import { db } from '../../lib/db';
+import { field, logChange } from '../../lib/admin';
+import { isCabinetAdmin } from '../../lib/auth';
+
+const me = Astro.locals.user!;
+if (!isCabinetAdmin(me)) return Astro.redirect('/admin?saved=' + encodeURIComponent('Only cabinet admins can manage access'));
+
+type U = { id: number; email: string; last_sign_in_at: string | null; roles: string | null };
+const d = db();
+const load = async () => (await d.prepare(`SELECT u.id, u.email, u.last_sign_in_at, GROUP_CONCAT(r.role) AS roles FROM users u
+  JOIN user_roles r ON r.user_id = u.id AND r.role IN ('editor', 'cabinet_admin') GROUP BY u.id ORDER BY u.email`).all<U>()).results;
+let users = await load();
+const admins = () => users.filter((u) => u.roles?.includes('cabinet_admin'));
+let error = '';
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const action = field(form, '_action');
+  if (action === 'add') {
+    const email = field(form, 'email').toLowerCase();
+    const role = field(form, 'role') === 'cabinet_admin' ? 'cabinet_admin' : 'editor';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) error = 'Enter a valid email address.';
+    else {
+      await d.prepare('INSERT OR IGNORE INTO users (email) VALUES (?)').bind(email).run();
+      const u = await d.prepare('SELECT id FROM users WHERE email = ?').bind(email).first<{ id: number }>();
+      const roles = role === 'cabinet_admin' ? ['editor', 'cabinet_admin'] : ['editor'];
+      await d.batch([
+        ...roles.map((r) => d.prepare('INSERT OR IGNORE INTO user_roles (user_id, role, granted_by) VALUES (?, ?, ?)').bind(u!.id, r, me.email)),
+        logChange(me.email, 'users', u!.id, 'update', `Gave ${email} ${role === 'cabinet_admin' ? 'cabinet admin' : 'editor'} access`),
+      ]);
+      return Astro.redirect('/admin/access?saved=' + encodeURIComponent(`${email} can now sign in`), 303);
+    }
+  }
+  if (action === 'remove' || action === 'demote') {
+    const id = Number(form.get('id'));
+    const target = users.find((u) => u.id === id);
+    const removingAdmin = target?.roles?.includes('cabinet_admin');
+    if (target && removingAdmin && admins().length <= 1) error = 'There must always be at least one cabinet admin.';
+    else if (target) {
+      const roles = action === 'demote' ? ['cabinet_admin'] : ['editor', 'cabinet_admin'];
+      await d.batch([
+        ...roles.map((r) => d.prepare('DELETE FROM user_roles WHERE user_id = ? AND role = ?').bind(id, r)),
+        logChange(me.email, 'users', id, 'update', action === 'demote' ? `Made ${target.email} an editor (no longer admin)` : `Removed access for ${target.email}`),
+      ]);
+      return Astro.redirect('/admin/access?saved=' + encodeURIComponent(action === 'demote' ? 'Changed to editor' : 'Access removed'), 303);
+    }
+  }
+  users = await load();
+}
+const when = (iso: string | null) => iso ? new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Beirut', day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso)) : 'never';
+---
+<Admin title="Panel access" active="access">
+  <div class="page-head">
+    <div>
+      <h1>Panel access</h1>
+      <p>Who can sign in to this panel. <strong>Editors</strong> change content. <strong>Cabinet admins</strong> can also manage this list. When the cabinet changes, add the new team here and remove the old one.</p>
+    </div>
+  </div>
+  {error && <div class="err-box" role="alert">{error}</div>}
+
+  <form method="post" class="card form-grid">
+    <h2>Give someone access</h2>
+    <p class="hint">They sign in with this email address: Cloudflare emails them a one-time code.</p>
+    <input type="hidden" name="_action" value="add" />
+    <div class="pair">
+      <div class="f"><label for="a-email">Email</label><input id="a-email" type="email" name="email" required placeholder="name@example.com" /></div>
+      <div class="f"><label for="a-role">Access</label>
+        <select id="a-role" name="role"><option value="editor">Editor</option><option value="cabinet_admin">Cabinet admin</option></select>
+      </div>
+    </div>
+    <div><button class="btn btn-primary" type="submit">Give access</button></div>
+  </form>
+
+  <section class="card">
+    <h2>People with access</h2>
+    <ul class="list">
+      {users.map((u) => {
+        const admin = u.roles?.includes('cabinet_admin');
+        return (
+          <li>
+            <div class="list-main">
+              <span class="list-title">{u.email}{u.id === me.id && ' (you)'}</span>
+              <span class="list-meta">Last signed in: {when(u.last_sign_in_at)}</span>
+            </div>
+            <span class:list={['badge', admin ? 'badge-ok' : 'badge-draft']}>{admin ? 'Cabinet admin' : 'Editor'}</span>
+            <form method="post" class="list-actions">
+              <input type="hidden" name="id" value={u.id} />
+              {admin && <button class="icon-btn" name="_action" value="demote" data-confirm={`Make ${u.email} an editor (not admin)?`}>Make editor</button>}
+              <button class="icon-btn" name="_action" value="remove" data-confirm={`Remove all panel access for ${u.email}?`}>Remove</button>
+            </form>
+          </li>
+        );
+      })}
+    </ul>
+  </section>
+</Admin>

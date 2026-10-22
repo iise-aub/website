@@ -1,0 +1,28 @@
+---
+// One field in English and Arabic, side by side. Empty Arabic shows the English on the site.
+interface Props {
+  name: string; label: string; hint?: string;
+  en?: string; ar?: string; long?: boolean; tall?: boolean; required?: boolean; error?: string;
+}
+const { name, label, hint, en = '', ar = '', long = false, tall = false, required = false, error } = Astro.props;
+const id = `f-${name}`;
+---
+<fieldset class="f bi" style="border:0;padding:0;margin:0">
+  <legend class="f-label">{label}{required && <span aria-hidden="true"> *</span>}</legend>
+  {hint && <p class="hint">{hint}</p>}
+  <div class="pair">
+    <div class="f">
+      <label class="lang-tag" for={`${id}-en`}>English{required ? ' (required)' : ''}</label>
+      {long
+        ? <textarea id={`${id}-en`} name={`${name}_en`} class:list={[tall && 'tall']} required={required} aria-invalid={error ? 'true' : undefined}>{en}</textarea>
+        : <input id={`${id}-en`} type="text" name={`${name}_en`} value={en} required={required} aria-invalid={error ? 'true' : undefined} />}
+    </div>
+    <div class="f">
+      <label class="lang-tag" for={`${id}-ar`}>العربية · Arabic (optional; English shows if empty)</label>
+      {long
+        ? <textarea id={`${id}-ar`} name={`${name}_ar`} class:list={[tall && 'tall']} dir="rtl" lang="ar">{ar}</textarea>
+        : <input id={`${id}-ar`} type="text" name={`${name}_ar`} value={ar} dir="rtl" lang="ar" />}
+    </div>
+  </div>
+  {error && <p class="err">{error}</p>}
+</fieldset>

@@ -1,0 +1,17 @@
+---
+import Base from '../../layouts/Base.astro';
+import PageHead from '../../components/PageHead.astro';
+import Rich from '../../components/Rich.astro';
+import { isLang, pick } from '../../lib/i18n';
+import { loadPage } from '../../lib/db';
+
+const { lang } = Astro.params;
+if (!isLang(lang)) return Astro.rewrite('/404');
+const { settings, text } = await loadPage('privacy');
+const tx = (block: string) => pick(text[block], 'text', lang);
+---
+<Base lang={lang} title={tx('title').text} settings={settings}>
+  <PageHead lang={lang} title={tx('title')} />
+  <div class="wrap body"><Rich v={tx('body')} page={lang} placeholder={Boolean(text.body?.needs_content)} /></div>
+</Base>
+<style>.body { max-width: calc(720px + 2 * var(--gutter)); padding-block: 8px 24px; }</style>

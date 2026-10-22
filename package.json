@@ -1,0 +1,28 @@
+{
+  "name": "iise-aub-website",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "db:migrate:local": "wrangler d1 migrations apply iise-aub-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply iise-aub-db --remote",
+    "db:seed:local": "wrangler d1 execute iise-aub-db --local --file=db/seed-placeholders.sql && wrangler d1 execute iise-aub-db --local --file=db/seed-team.sql && wrangler d1 execute iise-aub-db --local --file=db/seed-pages.sql && wrangler d1 execute iise-aub-db --local --file=db/seed-game.sql",
+    "deploy": "astro build && wrangler deploy",
+    "deploy:admin": "cross-env CLOUDFLARE_ENV=admin astro build && wrangler deploy --env admin"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^14.4.2",
+    "@fontsource-variable/noto-sans-arabic": "^5.3.0",
+    "@fontsource-variable/source-sans-3": "^5.3.1",
+    "astro": "^7.4.2"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "cross-env": "^10.1.0",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.151.3"
+  }
+}

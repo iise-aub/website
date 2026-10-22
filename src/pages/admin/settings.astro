@@ -1,0 +1,76 @@
+---
+import Admin from '../../layouts/Admin.astro';
+import { db } from '../../lib/db';
+import { field, isUrlOrEmpty, logChange, now } from '../../lib/admin';
+
+type Setting = { key: string; value: string; label: string };
+const d = db();
+const load = async () => (await d.prepare('SELECT key, value, label FROM settings ORDER BY sort_order').all<Setting>()).results;
+let settings = await load();
+const errors: Record<string, string> = {};
+
+const kind = (key: string) => key === 'contact_email' ? 'email' : key.endsWith('_url') ? 'url' : key === 'crn' ? 'crn' : 'text';
+const groups = [
+  { title: 'Club registration', hint: 'Shown on the Join page and in the header.', keys: ['crn', 'crn_term_en', 'crn_term_ar', 'aub_registration_url', 'iise_join_url'] },
+  { title: 'Social media and contact', hint: 'Shown in the footer and on the Contact page. Leave a link empty to hide it.', keys: ['instagram_url', 'tiktok_url', 'linkedin_url', 'contact_email', 'linktree_url'] },
+  { title: 'Members', hint: 'The WhatsApp link only appears after a visitor passes the “I’m not a robot” check.', keys: ['whatsapp_url', 'team_application_url', 'podcast_url'] },
+];
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const values = Object.fromEntries(settings.map((s) => [s.key, field(form, s.key)]));
+  for (const s of settings) {
+    const v = values[s.key];
+    const k = kind(s.key);
+    if (k === 'url' && !isUrlOrEmpty(v)) errors[s.key] = 'This must be a full link starting with https://';
+    if (k === 'email' && v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) errors[s.key] = 'This doesn’t look like an email address.';
+    if (k === 'crn' && !/^\d{3,6}$/.test(v)) errors[s.key] = 'The CRN is a number, e.g. 5029.';
+  }
+  if (Object.keys(errors).length === 0) {
+    const changed = settings.filter((s) => s.value !== values[s.key]);
+    if (changed.length) {
+      const by = Astro.locals.user!.email;
+      await d.batch([
+        ...changed.map((s) => d.prepare('UPDATE settings SET value = ?, updated_at = ?, updated_by = ? WHERE key = ?').bind(values[s.key], now(), by, s.key)),
+        logChange(by, 'settings', 'settings', 'update', changed.map((s) => s.label).join(', ')),
+      ]);
+    }
+    return Astro.redirect(`/admin/settings?saved=${encodeURIComponent(changed.length ? 'Settings saved' : 'Nothing changed')}`, 303);
+  }
+  settings = settings.map((s) => ({ ...s, value: values[s.key] }));
+}
+const byKey = Object.fromEntries(settings.map((s) => [s.key, s]));
+---
+<Admin title="Settings & links" active="settings">
+  <div class="page-head">
+    <div>
+      <h1>Settings & links</h1>
+      <p>Details used across the whole site. Update the CRN and term at the start of each term.</p>
+    </div>
+  </div>
+  {Object.keys(errors).length > 0 && <div class="err-box" role="alert">Please fix the highlighted fields below.</div>}
+  <form method="post" data-guard>
+    {groups.map((g) => (
+      <section class="card form-grid">
+        <div><h2>{g.title}</h2><p class="hint">{g.hint}</p></div>
+        {g.keys.filter((k) => byKey[k]).map((k) => {
+          const s = byKey[k];
+          const t = kind(k);
+          return (
+            <div class="f">
+              <label for={`s-${k}`}>{s.label}</label>
+              <input id={`s-${k}`} name={k} value={s.value}
+                type={t === 'url' ? 'url' : t === 'email' ? 'email' : 'text'}
+                inputmode={t === 'crn' ? 'numeric' : undefined}
+                dir={k.endsWith('_ar') ? 'rtl' : undefined} lang={k.endsWith('_ar') ? 'ar' : undefined}
+                placeholder={t === 'url' ? 'https://' : undefined}
+                aria-invalid={errors[k] ? 'true' : undefined} aria-describedby={errors[k] ? `e-${k}` : undefined} />
+              {errors[k] && <p class="err" id={`e-${k}`}>{errors[k]}</p>}
+            </div>
+          );
+        })}
+      </section>
+    ))}
+    <div class="form-actions"><button class="btn btn-primary" type="submit">Save settings</button></div>
+  </form>
+</Admin>

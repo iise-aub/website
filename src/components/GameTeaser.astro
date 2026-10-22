@@ -1,0 +1,51 @@
+---
+// "Weekly puzzle" teaser: invites people to play and shows last week's winner. Hidden when the puzzle is off.
+import T from './T.astro';
+import { pick, t, type Lang } from '../lib/i18n';
+import { loadGameTeaser } from '../lib/game-db';
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const { enabled, text, lastWinner } = await loadGameTeaser();
+const tx = (b: string) => pick(text[b], 'text', lang);
+const arrow = lang === 'ar' ? '←' : '→';
+---
+{enabled && (
+  <section class="wrap teaser-wrap" aria-labelledby="teaser-title">
+    <div class="teaser">
+      <div class="t-map" aria-hidden="true">
+        <svg viewBox="0 0 120 120">
+          <g stroke="rgb(255 255 255 / 0.12)" stroke-width="0.6">{[20, 40, 60, 80, 100].map((v) => <><line x1={v} y1="0" x2={v} y2="120" /><line x1="0" y1={v} x2="120" y2={v} /></>)}</g>
+          <polyline points="60,60 28,30 70,22 98,40 92,78 60,96 24,84 60,60" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round" stroke-dasharray="4 3" />
+          {[[28, 30], [70, 22], [98, 40], [92, 78], [60, 96], [24, 84]].map(([x, y]) => <circle cx={x} cy={y} r="4.5" fill="#fff" />)}
+          <circle cx="60" cy="60" r="7" fill="var(--steel-400)" stroke="#fff" stroke-width="2" />
+        </svg>
+      </div>
+      <div class="t-body">
+        <p class="t-eyebrow"><T v={tx('eyebrow')} page={lang} /> · <T v={tx('title')} page={lang} /></p>
+        <h2 id="teaser-title"><T v={tx('cta_title')} page={lang} /></h2>
+        <T v={tx('cta_text')} page={lang} as="p" class="t-text" />
+        <div class="t-actions">
+          <a class="btn btn-light" href={`/${lang}/game`}>{t(lang, 'gPlay')} <span class="arrow" aria-hidden="true">{arrow}</span></a>
+          {lastWinner && <p class="t-winner">🏆 {t(lang, 'gLastWinner')}: <strong dir="auto">{lastWinner.nickname}</strong> ({lastWinner.score} {t(lang, 'gPts')})</p>}
+        </div>
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .teaser-wrap { padding-block: 40px; }
+  .teaser {
+    position: relative; overflow: hidden; display: grid; gap: 20px; align-items: center; color: #fff;
+    border-radius: calc(var(--radius) + 6px); padding: 26px;
+    background: radial-gradient(120% 140% at 0% 0%, var(--slate-600) 0%, var(--navy-800) 45%, var(--navy-950) 100%);
+  }
+  @media (min-width: 760px) { .teaser { grid-template-columns: 220px 1fr; padding: 32px 40px; gap: 36px; } }
+  .t-map { width: min(100%, 220px); }
+  .t-eyebrow { margin: 0 0 6px; color: var(--steel-300); font-weight: 600; font-size: 0.85rem; letter-spacing: 0.12em; text-transform: uppercase; }
+  :lang(ar) .t-eyebrow { letter-spacing: 0; text-transform: none; font-size: 1rem; }
+  .teaser h2 { color: #fff; font-size: clamp(1.7rem, 4.6vw, 2.4rem); margin-bottom: 8px; }
+  .t-text { color: var(--steel-200); margin-bottom: 18px; }
+  .t-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+  .t-winner { margin: 0; color: var(--steel-200); }
+  .t-winner strong { color: #fff; }
+</style>

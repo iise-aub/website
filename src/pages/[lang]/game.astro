@@ -1,0 +1,289 @@
+---
+// Weekly puzzle: Coffee Run. Deliver coffee to every stop and back to the cart; shortest route wins.
+import Base from '../../layouts/Base.astro';
+import T from '../../components/T.astro';
+import PageHead from '../../components/PageHead.astro';
+import Rich from '../../components/Rich.astro';
+import Leaderboard from '../../components/Leaderboard.astro';
+import { isLang, pick, t } from '../../lib/i18n';
+import { loadPage } from '../../lib/db';
+import { metres, previousWeekId, weekBounds, weekId } from '../../lib/game';
+import { PLAYER_COOKIE, getPlayer, myScore, termBoard, weekBoard, weekRank, winner } from '../../lib/game-db';
+
+const { lang } = Astro.params;
+if (!isLang(lang)) return Astro.rewrite('/404');
+const { settings, text } = await loadPage('game');
+const tx = (block: string) => pick(text[block], 'text', lang);
+const on = settings.game_enabled === '1';
+
+const week = weekId();
+const { end } = weekBounds();
+const player = await getPlayer(Astro.cookies.get(PLAYER_COOKIE)?.value);
+const [mine, rank, board, term, last] = await Promise.all([
+  player ? myScore(week, player.id) : null,
+  player ? weekRank(week, player.id) : null,
+  weekBoard(week),
+  termBoard(settings.game_term_start || '2026-09-01'),
+  winner(previousWeekId()),
+]);
+const msLeft = new Date(end).getTime() - Date.now();
+const daysLeft = Math.floor(msLeft / 864e5), hoursLeft = Math.floor((msLeft % 864e5) / 36e5);
+const fmt = (ms: number) => { const s = Math.round(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+const labels = {
+  undo: t(lang, 'gUndo'), reset: t(lang, 'gReset'), submit: t(lang, 'gSubmit'), distance: t(lang, 'gDistance'), left: t(lang, 'gLeft'),
+  cart: t(lang, 'gCart'), visited: t(lang, 'gVisited'), taken: t(lang, 'gTaken'), invalid: t(lang, 'gInvalid'), error: t(lang, 'gError'),
+  weekEnded: t(lang, 'gWeekEnded'),
+};
+---
+<Base lang={lang} title={`${tx('title').text} · ${tx('eyebrow').text}`} description={tx('intro').text} settings={settings}>
+  <PageHead lang={lang} eyebrow={tx('eyebrow')} title={tx('title')} intro={tx('intro')}>
+    <p class="week-badge"><span class="dot" aria-hidden="true"></span>{week.replace('-W', ' · W')} · {t(lang, 'gNewIn')} {daysLeft}{t(lang, 'gDays')} {hoursLeft}{t(lang, 'gHours')}</p>
+  </PageHead>
+
+  <div class="wrap game-grid">
+    <section class="play-card" aria-label={tx('title').text}>
+      {!on ? (
+        <T v={tx('off_text')} page={lang} as="p" class="off" />
+      ) : mine ? (
+        <div class="result">
+          <p class="r-label">{t(lang, 'gYourScore')}</p>
+          <p class="r-score">{mine.score}<span>/1000</span></p>
+          <dl class="r-facts">
+            <div><dt>{t(lang, 'gYourRoute')}</dt><dd>{metres(mine.result)} m</dd></div>
+            <div><dt>{t(lang, 'gBestRoute')}</dt><dd>{metres(mine.best)} m</dd></div>
+            <div><dt>{t(lang, 'gTime')}</dt><dd>{fmt(mine.duration_ms)}</dd></div>
+            {rank && <div><dt>{t(lang, 'gRank')}</dt><dd>#{rank.rank} {t(lang, 'gOf')} {rank.players}</dd></div>}
+          </dl>
+          <p class="r-note">{t(lang, 'gPlayed')}</p>
+        </div>
+      ) : (
+        <div class="game" data-game data-labels={JSON.stringify(labels)}>
+          <div class="intro-panel" data-intro>
+            <details class="howto" open>
+              <summary>{t(lang, 'gHowTo')}</summary>
+              <Rich v={tx('rules')} page={lang} />
+            </details>
+            <form class="start-form" data-start-form novalidate>
+              {!player && (
+                <div class="nick">
+                  <label for="nickname">{t(lang, 'gNickname')}</label>
+                  <input id="nickname" name="nickname" type="text" minlength="2" maxlength="20" autocomplete="nickname" required dir="auto" />
+                  <T v={tx('nickname_hint')} page={lang} as="p" class="hint" />
+                </div>
+              )}
+              {player && <p class="hint">{t(lang, 'gPlayer')}: <strong dir="auto">{player.nickname}</strong></p>}
+              <p class="form-error" data-form-error role="alert"></p>
+              <button class="btn btn-primary btn-lg" type="submit">{t(lang, 'gStart')}</button>
+            </form>
+          </div>
+
+          <div class="play" data-play hidden>
+            <div class="hud" aria-live="polite">
+              <span><strong data-distance>0</strong> m</span>
+              <span><strong data-left>0</strong> {t(lang, 'gLeft')}</span>
+              <span data-clock>0:00</span>
+            </div>
+            <div class="board" dir="ltr" data-board>
+              <svg class="board-svg" viewBox="0 0 100 100" aria-hidden="true" preserveAspectRatio="none">
+                <defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M10 0H0V10" fill="none" stroke="var(--steel-200)" stroke-width="0.25" /></pattern></defs>
+                <rect width="100" height="100" fill="url(#grid)" />
+                <polyline class="route" data-route points="" />
+                <line class="closing" data-closing x1="0" y1="0" x2="0" y2="0" />
+              </svg>
+            </div>
+            <div class="controls">
+              <button type="button" class="btn btn-ghost" data-undo>{t(lang, 'gUndo')}</button>
+              <button type="button" class="btn btn-ghost" data-reset>{t(lang, 'gReset')}</button>
+              <button type="button" class="btn btn-primary" data-submit disabled>{t(lang, 'gSubmit')}</button>
+            </div>
+            <p class="form-error" data-play-error role="alert"></p>
+          </div>
+        </div>
+      )}
+    </section>
+
+    <aside class="side">
+      {last && (
+        <section class="winner" aria-labelledby="winner-h">
+          <p class="w-label" id="winner-h">🏆 {t(lang, 'gLastWinner')}</p>
+          <p class="w-name" dir="auto">{last.nickname}</p>
+          <p class="w-score">{last.score} {t(lang, 'gPts')}</p>
+        </section>
+      )}
+      <Leaderboard lang={lang} week={board} term={term} me={player?.id} />
+    </aside>
+  </div>
+</Base>
+
+<script>
+  type Stop = { x: number; y: number; name: string };
+  document.querySelectorAll<HTMLElement>('[data-game]').forEach((root) => {
+    const L = JSON.parse(root.dataset.labels!) as Record<string, string>;
+    const form = root.querySelector<HTMLFormElement>('[data-start-form]')!;
+    const formError = root.querySelector<HTMLElement>('[data-form-error]')!;
+    const intro = root.querySelector<HTMLElement>('[data-intro]')!;
+    const play = root.querySelector<HTMLElement>('[data-play]')!;
+    const board = root.querySelector<HTMLElement>('[data-board]')!;
+    const route = root.querySelector<SVGPolylineElement>('[data-route]')!;
+    const closing = root.querySelector<SVGLineElement>('[data-closing]')!;
+    const distEl = root.querySelector<HTMLElement>('[data-distance]')!;
+    const leftEl = root.querySelector<HTMLElement>('[data-left]')!;
+    const clock = root.querySelector<HTMLElement>('[data-clock]')!;
+    const submit = root.querySelector<HTMLButtonElement>('[data-submit]')!;
+    const playError = root.querySelector<HTMLElement>('[data-play-error]')!;
+    let stops: Stop[] = [], order: number[] = [], token = '', started = 0, timer = 0;
+    const buttons: HTMLButtonElement[] = [];
+
+    const d = (a: Stop, b: Stop) => Math.hypot(a.x - b.x, a.y - b.y);
+    function draw() {
+      const path = [0, ...order].map((i) => `${stops[i].x},${stops[i].y}`).join(' ');
+      route.setAttribute('points', path);
+      const done = order.length === stops.length - 1;
+      const lastStop = stops[order[order.length - 1] ?? 0];
+      closing.setAttribute('x1', String(lastStop.x)); closing.setAttribute('y1', String(lastStop.y));
+      closing.setAttribute('x2', String(stops[0].x)); closing.setAttribute('y2', String(stops[0].y));
+      closing.style.opacity = done ? '1' : '0';
+      let len = 0, prev = 0;
+      for (const i of order) { len += d(stops[prev], stops[i]); prev = i; }
+      if (done) len += d(stops[prev], stops[0]);
+      distEl.textContent = Math.round(len * 10).toLocaleString();
+      leftEl.textContent = String(stops.length - 1 - order.length);
+      buttons.forEach((b, k) => {
+        const pos = order.indexOf(k + 1);
+        b.setAttribute('aria-pressed', String(pos >= 0));
+        b.querySelector('.pin')!.textContent = pos >= 0 ? String(pos + 1) : '';
+        b.classList.toggle('is-last', pos === order.length - 1 && pos >= 0);
+        b.setAttribute('aria-label', `${stops[k + 1].name}${pos >= 0 ? ` (${pos + 1}, ${L.visited})` : ''}`);
+      });
+      submit.disabled = !done;
+    }
+
+    function build() {
+      const cart = document.createElement('span');
+      cart.className = 'cart'; cart.style.left = `${stops[0].x}%`; cart.style.top = `${stops[0].y}%`;
+      cart.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="#fff" d="M4 8h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8Zm12 1h1.5a2.5 2.5 0 0 1 0 5H16v-1.6h1.5a.9.9 0 0 0 0-1.8H16V9ZM3 19.5h14V21H3v-1.5ZM8 2.5c1 1 1 2 0 3m3-3c1 1 1 2 0 3" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg>'; cart.setAttribute('role', 'img'); cart.setAttribute('aria-label', L.cart);
+      board.appendChild(cart);
+      stops.slice(1).forEach((s, k) => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'stop';
+        b.style.left = `${s.x}%`; b.style.top = `${s.y}%`;
+        if (s.x < 16) b.classList.add('edge-start'); else if (s.x > 84) b.classList.add('edge-end');
+        if (s.y > 88) b.classList.add('edge-bottom');
+        b.innerHTML = `<span class="pin" aria-hidden="true"></span><span class="label">${s.name.replace(/</g, '&lt;')}</span>`;
+        b.addEventListener('click', () => {
+          const i = k + 1, pos = order.indexOf(i);
+          if (pos === -1) order.push(i);
+          else if (pos === order.length - 1) order.pop(); // tap the last stop again to undo
+          draw();
+        });
+        buttons.push(b); board.appendChild(b);
+      });
+      draw();
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      formError.textContent = '';
+      const nickname = (form.querySelector<HTMLInputElement>('#nickname')?.value ?? '').trim();
+      const res = await fetch('/api/game/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nickname }) });
+      const data = (await res.json().catch(() => ({}))) as { error?: string; token?: string; stops?: Stop[] };
+      if (!res.ok) {
+        if (data.error === 'played') return location.reload();
+        formError.textContent = data.error === 'taken' ? L.taken : data.error === 'length' || data.error === 'chars' ? L.invalid : L.error;
+        return;
+      }
+      token = data.token!; stops = data.stops!;
+      intro.hidden = true; play.hidden = false;
+      build();
+      started = Date.now();
+      timer = window.setInterval(() => {
+        const s = Math.floor((Date.now() - started) / 1000);
+        clock.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+      }, 500);
+      board.scrollIntoView({ block: 'nearest' });
+      buttons[0]?.focus({ preventScroll: true });
+    });
+
+    root.querySelector('[data-undo]')!.addEventListener('click', () => { order.pop(); draw(); });
+    root.querySelector('[data-reset]')!.addEventListener('click', () => { order = []; draw(); });
+    submit.addEventListener('click', async () => {
+      submit.disabled = true; playError.textContent = '';
+      const res = await fetch('/api/game/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, order }) });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (res.ok || data.error === 'played') { clearInterval(timer); location.reload(); return; }
+      playError.textContent = data.error === 'week-ended' ? L.weekEnded : L.error;
+      submit.disabled = false;
+    });
+  });
+</script>
+
+<style>
+  .week-badge { display: inline-flex; align-items: center; gap: 8px; margin: 0; padding: 6px 12px; border-radius: 999px; background: var(--steel-100); color: var(--navy-900); font-weight: 600; font-size: 0.9rem; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; }
+  .game-grid { display: grid; gap: 20px; padding-block: 24px; align-items: start; }
+  @media (min-width: 960px) { .game-grid { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); } }
+  .play-card { background: var(--white); border: 1px solid var(--steel-200); border-radius: calc(var(--radius) + 4px); padding: 20px; box-shadow: var(--shadow); }
+  .off { margin: 0; font-size: 1.1rem; }
+  .howto { margin-bottom: 18px; }
+  .howto summary { cursor: pointer; font-weight: 700; color: var(--navy-800); margin-bottom: 10px; }
+  .start-form { display: grid; gap: 12px; justify-items: start; }
+  .nick { display: grid; gap: 6px; width: min(100%, 340px); }
+  .nick label { font-weight: 700; }
+  .nick input { font: inherit; padding: 12px 14px; border: 1px solid var(--steel-300); border-radius: 12px; min-height: 48px; }
+  .hint { margin: 0; color: var(--grey-600); font-size: 0.95rem; }
+  .form-error { margin: 0; color: #b91c1c; font-weight: 600; min-height: 1.2em; }
+  .btn-lg { min-height: 54px; padding-inline: 1.8em; }
+
+  .hud { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 10px; font-variant-numeric: tabular-nums; color: var(--ink-soft); }
+  .hud strong { color: var(--navy-800); font-size: 1.2rem; }
+  .board {
+    position: relative; aspect-ratio: 1; width: 100%; border-radius: 14px; overflow: hidden; touch-action: manipulation;
+    background: linear-gradient(160deg, #f7f9fc, #eaf0f7); border: 1px solid var(--steel-200);
+  }
+  .board-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .route { fill: none; stroke: var(--navy-800); stroke-width: 0.9; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+  .board .route { stroke-width: 3px; }
+  .closing { stroke: var(--slate-500); stroke-width: 3px; stroke-dasharray: 6 6; vector-effect: non-scaling-stroke; transition: opacity 200ms ease; }
+  .board :global(.cart), .board :global(.stop) { position: absolute; transform: translate(-50%, -50%); }
+  .board :global(.cart) { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--navy-800); font-size: 20px; box-shadow: 0 0 0 5px rgb(26 54 104 / 0.18); z-index: 2; }
+  /* Stops are not separate layers, so every pin sits above every label. */
+  .board :global(.stop) {
+    display: grid; place-items: center; width: 44px; height: 44px; padding: 0; background: none; border: 0; cursor: pointer;
+    font: inherit; color: var(--navy-900);
+  }
+  .board :global(.pin) {
+    position: relative; z-index: 2; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--white); border: 3px solid var(--slate-500);
+    transition: transform 160ms var(--ease-out), background-color 160ms ease, border-color 160ms ease; font-size: 0.75rem; font-weight: 800; color: #fff;
+  }
+  .board :global(.stop[aria-pressed='true'] .pin) { background: var(--navy-800); border-color: var(--navy-800); }
+  .board :global(.stop.is-last .pin) { box-shadow: 0 0 0 5px rgb(26 54 104 / 0.2); }
+  .board :global(.stop:active .pin) { transform: scale(0.9); }
+  .board :global(.label) {
+    position: absolute; z-index: 1; top: calc(50% + 14px); left: 50%; transform: translateX(-50%); pointer-events: none;
+    font-size: 0.68rem; font-weight: 700; white-space: nowrap; padding: 1px 6px; border-radius: 6px; background: rgb(255 255 255 / 0.88);
+    border: 1px solid var(--steel-200); line-height: 1.4;
+  }
+  .board :global(.edge-start .label) { left: 8px; transform: none; }
+  .board :global(.edge-end .label) { left: auto; right: 8px; transform: none; }
+  .board :global(.edge-bottom .label) { top: auto; bottom: calc(50% + 14px); }
+  @media (max-width: 480px) { .board :global(.label) { font-size: 0.6rem; padding: 0 4px; } }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .controls [data-submit] { margin-inline-start: auto; }
+
+  .result { text-align: center; padding-block: 10px; }
+  .r-label { margin: 0; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--grey-600); font-size: 0.85rem; }
+  :lang(ar) .r-label { letter-spacing: 0; text-transform: none; font-size: 1rem; }
+  .r-score { margin: 0; font-size: clamp(3.6rem, 14vw, 5.5rem); font-weight: 800; color: var(--navy-800); line-height: 1; font-family: var(--font-latin); }
+  .r-score span { font-size: 0.35em; color: var(--grey-600); font-weight: 600; }
+  .r-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 22px 0; }
+  .r-facts div { background: var(--steel-50); border-radius: 12px; padding: 12px; }
+  .r-facts dt { font-size: 0.85rem; color: var(--grey-600); }
+  .r-facts dd { margin: 0; font-weight: 700; color: var(--navy-900); font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+  .r-note { color: var(--ink-soft); margin: 0; }
+
+  .side { display: grid; gap: 14px; }
+  .winner { border-radius: var(--radius); padding: 18px; color: #fff; background: linear-gradient(135deg, var(--navy-800), var(--navy-950)); }
+  .w-label { margin: 0; color: var(--steel-300); font-weight: 600; }
+  .w-name { margin: 4px 0 0; font-size: 1.6rem; font-weight: 800; }
+  .w-score { margin: 0; color: var(--steel-200); }
+</style>

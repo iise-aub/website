@@ -1,0 +1,75 @@
+---
+// Editing panel layout. English only: editors are AUB students (decided Oct 22, 2026).
+import '@fontsource-variable/source-sans-3/wght.css';
+import '@fontsource-variable/noto-sans-arabic/wght.css';
+import '../styles/global.css';
+import '../styles/admin.css';
+import { env } from 'cloudflare:workers';
+import { isCabinetAdmin } from '../lib/auth';
+
+interface Props { title: string; active: string }
+const { title, active } = Astro.props;
+const user = Astro.locals.user!;
+const siteUrl = env.APP_ROLE === 'admin' ? String(env.SITE_URL) : '/';
+const flash = Astro.url.searchParams.get('saved');
+const nav = [
+  { href: '/admin', key: 'overview', label: 'Overview' },
+  { href: '/admin/events', key: 'events', label: 'Events' },
+  { href: '/admin/history', key: 'history', label: 'History map' },
+  { href: '/admin/people', key: 'people', label: 'Cabinet & people' },
+  { href: '/admin/teams', key: 'teams', label: 'Teams' },
+  { href: '/admin/game', key: 'game', label: 'Weekly puzzle' },
+  { href: '/admin/text', key: 'text', label: 'Page text' },
+  { href: '/admin/settings', key: 'settings', label: 'Settings & links' },
+  ...(isCabinetAdmin(user) ? [{ href: '/admin/access', key: 'access', label: 'Panel access' }] : []),
+];
+---
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} · IISE AUB panel</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body class="panel">
+    <a class="skip-link" href="#panel-main">Skip to content</a>
+    <aside class="panel-side">
+      <a class="panel-brand" href="/admin">
+        <img src="/brand/iise-logo.png" width="536" height="186" alt="IISE" />
+        <span>Editing panel</span>
+      </a>
+      <nav aria-label="Panel">
+        <ul class="panel-nav">
+          {nav.map((n) => <li><a href={n.href} aria-current={n.key === active ? 'page' : undefined}>{n.label}</a></li>)}
+        </ul>
+      </nav>
+      <div class="panel-side-foot">
+        <a class="panel-viewsite" href={siteUrl} target="_blank" rel="noopener">View the live site ↗</a>
+        <p class="panel-user">Signed in as<br /><strong>{user.email}</strong></p>
+      </div>
+    </aside>
+    <main id="panel-main" class="panel-main">
+      {flash && <p class="flash" role="status">✓ {flash}</p>}
+      <slot />
+    </main>
+    <script>
+      // Ask before deleting; warn before leaving a form with unsaved changes.
+      document.querySelectorAll<HTMLElement>('[data-confirm]').forEach((el) =>
+        el.addEventListener('click', (e) => { if (!confirm(el.dataset.confirm!)) e.preventDefault(); }));
+      document.querySelectorAll<HTMLFormElement>('form[data-guard]').forEach((form) => {
+        let dirty = false;
+        form.addEventListener('input', () => (dirty = true));
+        form.addEventListener('submit', () => (dirty = false));
+        window.addEventListener('beforeunload', (e) => { if (dirty) e.preventDefault(); });
+      });
+      // Fade the "saved" message after a few seconds and clean the address bar.
+      const flash = document.querySelector('.flash');
+      if (flash) {
+        setTimeout(() => flash.classList.add('is-hiding'), 4000);
+        const u = new URL(location.href); u.searchParams.delete('saved'); history.replaceState(null, '', u);
+      }
+    </script>
+  </body>
+</html>

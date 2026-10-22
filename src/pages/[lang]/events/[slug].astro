@@ -1,0 +1,72 @@
+---
+import Base from '../../../layouts/Base.astro';
+import T from '../../../components/T.astro';
+import Rich from '../../../components/Rich.astro';
+import { isLang, pick, t } from '../../../lib/i18n';
+import { formatDate, formatTime } from '../../../lib/time';
+import { loadEvent } from '../../../lib/db';
+
+const { lang, slug } = Astro.params;
+if (!isLang(lang) || !slug) return Astro.rewrite('/404');
+const { settings, event: e } = await loadEvent(slug);
+if (!e) return Astro.rewrite(`/${lang}/not-found`);
+
+const title = pick(e, 'title', lang);
+const summary = pick(e, 'summary', lang);
+const body = pick(e, 'body', lang);
+const location = pick(e, 'location', lang);
+const isPast = new Date(e.ends_at).getTime() < Date.now();
+const date = formatDate(e.starts_at, lang, { year: 'numeric' });
+const arrow = lang === 'ar' ? '→' : '←';
+const coverAlt = pick({ alt_en: e.cover_alt_en, alt_ar: e.cover_alt_ar }, 'alt', lang).text;
+---
+<Base lang={lang} title={title.text} description={summary.text} settings={settings} image={e.cover_key ? `/media/${e.cover_key}-960.webp` : undefined}>
+  <article class="wrap event">
+    <p><a class="back" href={`/${lang}/events`}><span aria-hidden="true">{arrow}</span> {t(lang, 'backToEvents')}</a></p>
+    <header>
+      {e.is_placeholder ? <span class="ph-badge">{t(lang, 'placeholder')}</span> : null}
+      <h1><T v={title} page={lang} /></h1>
+      {summary.text && <T v={summary} page={lang} as="p" class="lede" />}
+    </header>
+
+    <div class="layout">
+      <div class="main">
+        {e.cover_key && (
+          <img class="cover" src={`/media/${e.cover_key}-960.webp`} srcset={`/media/${e.cover_key}-480.webp 480w, /media/${e.cover_key}-960.webp 960w`}
+               sizes="(min-width: 900px) 640px, 100vw" alt={coverAlt} width="960" height="640" />
+        )}
+        {body.text && <Rich v={body} page={lang} />}
+      </div>
+      <aside class="facts" aria-label={t(lang, 'eventDetails')}>
+        <dl>
+          <dt>{t(lang, 'when')}</dt>
+          <dd><time datetime={e.starts_at}>{date}<br />{formatTime(e.starts_at, lang)}–{formatTime(e.ends_at, lang)}</time><br /><small>{t(lang, 'timesNote')}</small></dd>
+          {location.text && <><dt>{t(lang, 'where')}</dt><dd><T v={location} page={lang} /></dd></>}
+        </dl>
+        {!isPast && (
+          <div class="actions">
+            {e.registration_url && <a class="btn btn-primary" href={e.registration_url} target="_blank" rel="noopener">{t(lang, 'signUp')}<span class="visually-hidden"> {t(lang, 'newTab')}</span></a>}
+            <a class="btn btn-ghost" href={`/events/${e.slug}.ics`}>{t(lang, 'addToCalendar')}</a>
+          </div>
+        )}
+      </aside>
+    </div>
+  </article>
+</Base>
+<style>
+  .event { padding-block: 32px 0; }
+  .back { text-decoration: none; font-weight: 600; }
+  .event h1 { font-size: clamp(2.2rem, 6vw, 3.4rem); margin: 10px 0 12px; max-width: 20ch; }
+  .lede { font-size: 1.2rem; color: var(--ink-soft); max-width: 56ch; }
+  .layout { display: grid; gap: 28px; margin-top: 24px; }
+  @media (min-width: 900px) { .layout { grid-template-columns: 1fr 340px; align-items: start; } }
+  .cover { border-radius: var(--radius); width: 100%; aspect-ratio: 3 / 2; object-fit: cover; margin-bottom: 24px; background: var(--steel-100); }
+  .facts { background: var(--steel-50); border: 1px solid var(--steel-200); border-radius: var(--radius); padding: 22px; position: sticky; top: 88px; }
+  .facts dl { margin: 0; display: grid; gap: 4px; }
+  .facts dt { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--grey-600); margin-top: 10px; }
+  :lang(ar) .facts dt { letter-spacing: 0; text-transform: none; font-size: 0.95rem; }
+  .facts dt:first-child { margin-top: 0; }
+  .facts dd { margin: 0; font-weight: 600; color: var(--navy-900); }
+  .facts small { font-weight: 400; color: var(--grey-600); }
+  .actions { display: grid; gap: 8px; margin-top: 18px; }
+</style>

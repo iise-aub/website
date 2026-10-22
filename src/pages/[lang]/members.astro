@@ -1,0 +1,60 @@
+---
+// Door 2: current members. Upcoming events, joining a team, the WhatsApp community (behind the robot check), the podcast.
+import Base from '../../layouts/Base.astro';
+import T from '../../components/T.astro';
+import PageHead from '../../components/PageHead.astro';
+import TextSection from '../../components/TextSection.astro';
+import EventCard from '../../components/EventCard.astro';
+import WhatsAppReveal from '../../components/WhatsAppReveal.astro';
+import GameTeaser from '../../components/GameTeaser.astro';
+import { isLang, pick, t } from '../../lib/i18n';
+import { loadMembersPage } from '../../lib/db';
+
+const { lang } = Astro.params;
+if (!isLang(lang)) return Astro.rewrite('/404');
+const { settings, text, upcoming } = await loadMembersPage();
+const tx = (block: string) => pick(text[block], 'text', lang);
+const ph = (block: string) => Boolean(text[block]?.needs_content);
+const arrow = lang === 'ar' ? '←' : '→';
+---
+<Base lang={lang} title={tx('eyebrow').text} description={tx('intro').text} settings={settings}>
+  <PageHead lang={lang} eyebrow={tx('eyebrow')} title={tx('title')} intro={tx('intro')} />
+
+  <section class="wrap upcoming" aria-labelledby="up-title">
+    <div class="row">
+      <h2 id="up-title"><T v={tx('events_title')} page={lang} /></h2>
+      <a href={`/${lang}/events`}>{t(lang, 'seeAllEvents')} <span aria-hidden="true">{arrow}</span></a>
+    </div>
+    {upcoming.length > 0
+      ? <ul class="events">{upcoming.map((e) => <li><EventCard lang={lang} event={e} /></li>)}</ul>
+      : <p class="muted">{t(lang, 'noUpcoming')}</p>}
+  </section>
+
+  <GameTeaser lang={lang} />
+
+  <TextSection lang={lang} title={tx('whatsapp_title')} body={tx('whatsapp_text')} tone="tint" id="whatsapp">
+    <WhatsAppReveal lang={lang} available={Boolean(settings.whatsapp_url)} />
+  </TextSection>
+
+  <TextSection lang={lang} title={tx('team_title')} body={tx('team_text')} id="teams">
+    <div class="actions">
+      <a class="btn btn-primary" href={`/${lang}/team`}>{t(lang, 'meetTeams')} <span class="arrow" aria-hidden="true">{arrow}</span></a>
+      {settings.team_application_url && <a class="btn btn-ghost" href={settings.team_application_url} target="_blank" rel="noopener">{t(lang, 'applyTeam')}<span class="visually-hidden"> {t(lang, 'newTab')}</span></a>}
+    </div>
+  </TextSection>
+
+  <TextSection lang={lang} title={tx('podcast_title')} body={tx('podcast_text')} placeholder={ph('podcast_text')} tone="navy" id="podcast">
+    {settings.podcast_url
+      ? <a class="btn btn-light" href={settings.podcast_url} target="_blank" rel="noopener">{t(lang, 'listen')}<span class="visually-hidden"> {t(lang, 'newTab')}</span></a>
+      : <span class="ph-badge">{t(lang, 'linkComing')}</span>}
+  </TextSection>
+</Base>
+<style>
+  .upcoming { padding-block: 28px 36px; }
+  .row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px 16px; margin-bottom: 14px; }
+  .row h2 { font-size: clamp(1.7rem, 4.5vw, 2.3rem); margin: 0; }
+  .row a { font-weight: 600; text-decoration: none; }
+  .events { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+  .muted { color: var(--grey-600); }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+</style>

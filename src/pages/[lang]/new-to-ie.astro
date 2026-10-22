@@ -1,0 +1,42 @@
+---
+// Door 1: new to IE. What IE is, where it leads, IE at AUB, and how to get involved.
+import Base from '../../layouts/Base.astro';
+import PageHead from '../../components/PageHead.astro';
+import TextSection from '../../components/TextSection.astro';
+import LogoGlobe from '../../components/LogoGlobe.astro';
+import { isLang, pick, t } from '../../lib/i18n';
+import { loadPage } from '../../lib/db';
+
+const { lang } = Astro.params;
+if (!isLang(lang)) return Astro.rewrite('/404');
+const { settings, text } = await loadPage('new-to-ie');
+const tx = (block: string) => pick(text[block], 'text', lang);
+const ph = (block: string) => Boolean(text[block]?.needs_content);
+const arrow = lang === 'ar' ? '←' : '→';
+---
+<Base lang={lang} title={tx('title').text} description={tx('intro').text} settings={settings}>
+  <div class="intro-grid wrap">
+    <PageHead lang={lang} eyebrow={tx('eyebrow')} title={tx('title')} intro={tx('intro')} />
+    <div class="globe" aria-hidden="true"><LogoGlobe /></div>
+  </div>
+  <TextSection lang={lang} title={tx('what_title')} body={tx('what_body')} placeholder={ph('what_body')} id="what" />
+  <TextSection lang={lang} title={tx('fields_title')} body={tx('fields_body')} placeholder={ph('fields_body')} tone="tint" id="fields" />
+  <TextSection lang={lang} title={tx('aub_title')} body={tx('aub_body')} placeholder={ph('aub_body')} id="aub" />
+  <TextSection lang={lang} title={tx('join_title')} body={tx('join_text')} tone="navy" id="join">
+    <div class="actions">
+      <a class="btn btn-light" href={`/${lang}/join`}>{t(lang, 'joinNow')} <span class="arrow" aria-hidden="true">{arrow}</span></a>
+      <a class="btn btn-outline-light" href={`/${lang}/events`}>{t(lang, 'seeAllEvents')}</a>
+    </div>
+  </TextSection>
+</Base>
+<style>
+  .intro-grid { display: grid; align-items: center; padding-inline: 0; }
+  .intro-grid :global(.page-head) { padding-inline: var(--gutter); }
+  .globe { display: none; }
+  @media (min-width: 940px) {
+    .intro-grid { grid-template-columns: 1.3fr 1fr; padding-inline: var(--gutter); }
+    .intro-grid :global(.page-head) { padding-inline: 0; }
+    .globe { display: block; max-width: 420px; justify-self: end; }
+  }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+</style>

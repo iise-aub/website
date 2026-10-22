@@ -1,0 +1,135 @@
+---
+import Admin from '../../../layouts/Admin.astro';
+import BiField from '../../../components/admin/BiField.astro';
+import PhotoField from '../../../components/admin/PhotoField.astro';
+import { db } from '../../../lib/db';
+import { checked, field, getMedia, logChange, now, savePhotoFromForm } from '../../../lib/admin';
+
+type M = Record<string, string | number | null> & { id: number; title_en: string; is_placeholder: number; visible: number };
+const d = db();
+const isNew = Astro.params.id === 'new';
+const id = isNew ? null : Number(Astro.params.id);
+if (!isNew && !Number.isInteger(id)) return Astro.redirect('/admin/history');
+const m: M | null = isNew ? null : await d.prepare('SELECT * FROM milestones WHERE id = ?').bind(id).first<M>();
+if (!isNew && !m) return Astro.redirect('/admin/history?saved=' + encodeURIComponent('That station no longer exists'));
+const photoRow = m ? await d.prepare('SELECT media_id FROM milestone_photos WHERE milestone_id = ? ORDER BY sort_order LIMIT 1').bind(m.id).first<{ media_id: number }>() : null;
+
+const by = Astro.locals.user!.email;
+const errors: Record<string, string> = {};
+let values: Record<string, string> = {};
+let confirmedInput: boolean | null = null;
+let postedPhoto: number | null | undefined; // keeps a just-uploaded photo if the save fails
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  if (form.get('_action') === 'delete' && m) {
+    await d.batch([d.prepare('DELETE FROM milestones WHERE id = ?').bind(m.id), logChange(by, 'milestones', m.id, 'delete', m.title_en)]);
+    return Astro.redirect('/admin/history?saved=' + encodeURIComponent('Station deleted'), 303);
+  }
+  const names = ['title_en', 'title_ar', 'text_en', 'text_ar', 'year', 'month', 'day', 'category', 'source_note'];
+  values = Object.fromEntries(names.map((n) => [n, field(form, n)]));
+  confirmedInput = form.get('confirmed') === 'on';
+  postedPhoto = await savePhotoFromForm(form, 'photo');
+  const year = Number(values.year), month = values.month ? Number(values.month) : null, day = values.day ? Number(values.day) : null;
+  if (!values.title_en) errors.title = 'Give the station an English title.';
+  if (!Number.isInteger(year) || year < 1800 || year > 2100) errors.year = 'Enter a year, e.g. 2024. (If unknown, enter your best guess and leave “confirmed” unticked.)';
+  if (day && !month) errors.day = 'Choose a month too, or leave the day empty.';
+  if (day && (day < 1 || day > 31)) errors.day = 'The day must be between 1 and 31.';
+  if (!['ie_world', 'aub', 'chapter', 'award'].includes(values.category)) errors.category = 'Choose a category.';
+  // Brief rule: no historical date goes live as confirmed without a recorded source.
+  if (confirmedInput && !values.source_note) errors.source_note = 'Add the source before marking the date as confirmed (a link, document or post).';
+
+  if (Object.keys(errors).length === 0) {
+    const photo = postedPhoto;
+    const fields = [values.title_en, values.title_ar, values.text_en, values.text_ar, year, month, day, values.category, values.source_note,
+      confirmedInput ? 0 : 1, checked(form, 'visible'), now(), by];
+    let mid: number;
+    if (m) {
+      mid = m.id;
+      await d.prepare(`UPDATE milestones SET title_en=?, title_ar=?, text_en=?, text_ar=?, year=?, month=?, day=?, category=?, source_note=?,
+        is_placeholder=?, visible=?, updated_at=?, updated_by=? WHERE id=?`).bind(...fields, m.id).run();
+    } else {
+      const row = await d.prepare(`INSERT INTO milestones (title_en, title_ar, text_en, text_ar, year, month, day, category, source_note,
+        is_placeholder, visible, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`).bind(...fields).first<{ id: number }>();
+      mid = row!.id;
+    }
+    await d.batch([
+      d.prepare('DELETE FROM milestone_photos WHERE milestone_id = ?').bind(mid),
+      ...(photo ? [d.prepare('INSERT INTO milestone_photos (milestone_id, media_id, sort_order) VALUES (?, ?, 0)').bind(mid, photo)] : []),
+      logChange(by, 'milestones', mid, m ? 'update' : 'create', values.title_en),
+    ]);
+    return Astro.redirect(`/admin/history/${mid}?saved=` + encodeURIComponent(m ? 'Station saved' : 'Station created'), 303);
+  }
+}
+
+const v = (n: string, fallback: unknown = '') => (n in values ? values[n] : String(fallback ?? ''));
+const confirmed = confirmedInput ?? (m ? !m.is_placeholder : false);
+const visible = m ? Boolean(m.visible) : true;
+const photo = await getMedia(postedPhoto !== undefined ? postedPhoto : photoRow?.media_id ?? null);
+const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const cats = [['ie_world', 'IE worldwide'], ['aub', 'AUB'], ['chapter', 'Our chapter'], ['award', 'Award']];
+---
+<Admin title={isNew ? 'New station' : `Edit: ${m!.title_en}`} active="history">
+  <p><a href="/admin/history">← History map</a></p>
+  <div class="page-head"><div><h1>{isNew ? 'New history station' : 'Edit history station'}</h1></div></div>
+  {Object.keys(errors).length > 0 && (
+    <div class="err-box" role="alert">Please fix these:<ul>{Object.values(errors).map((e) => <li>{e}</li>)}</ul></div>
+  )}
+
+  <form method="post" data-guard>
+    <section class="card form-grid">
+      <h2>The story</h2>
+      <BiField name="title" label="Title" hint="Short, e.g. “IISE AUB is founded”." en={v('title_en', m?.title_en)} ar={v('title_ar', m?.title_ar)} required error={errors.title} />
+      <BiField name="text" label="Story" hint="One to three sentences." long en={v('text_en', m?.text_en)} ar={v('text_ar', m?.text_ar)} />
+      <PhotoField name="photo" label="Photo" media={photo} hint="Strongly recommended. Without one, the map shows a navy “Photo to come” panel." />
+    </section>
+
+    <section class="card form-grid">
+      <h2>Date and source</h2>
+      <div class="row3">
+        <div class="f">
+          <label for="f-year">Year *</label>
+          <input id="f-year" type="number" name="year" min="1800" max="2100" value={v('year', m?.year)} required aria-invalid={errors.year ? 'true' : undefined} />
+        </div>
+        <div class="f">
+          <label for="f-month">Month (optional)</label>
+          <select id="f-month" name="month">
+            <option value="">—</option>
+            {months.map((name, i) => <option value={i + 1} selected={v('month', m?.month) === String(i + 1)}>{name}</option>)}
+          </select>
+        </div>
+        <div class="f">
+          <label for="f-day">Day (optional)</label>
+          <input id="f-day" type="number" name="day" min="1" max="31" value={v('day', m?.day)} aria-invalid={errors.day ? 'true' : undefined} />
+        </div>
+      </div>
+      {errors.year && <p class="err">{errors.year}</p>}
+      {errors.day && <p class="err">{errors.day}</p>}
+      <div class="f">
+        <label for="f-cat">Category *</label>
+        <select id="f-cat" name="category">
+          {cats.map(([val, label]) => <option value={val} selected={v('category', m?.category ?? 'chapter') === val}>{label}</option>)}
+        </select>
+      </div>
+      <div class="f">
+        <label for="f-source">Source</label>
+        <p class="hint">Where does this date come from? A link, a document (“certificate in the chapter drive”), or a post. Never shown on the site.</p>
+        <textarea id="f-source" name="source_note" aria-invalid={errors.source_note ? 'true' : undefined}>{v('source_note', m?.source_note)}</textarea>
+        {errors.source_note && <p class="err">{errors.source_note}</p>}
+      </div>
+      <label class="check"><input type="checkbox" name="confirmed" checked={confirmed} /> The date and wording are confirmed. (Unticked, the site shows “Date to be confirmed” and a Placeholder mark.)</label>
+    </section>
+
+    <section class="card form-grid">
+      <h2>Visibility</h2>
+      <label class="check"><input type="checkbox" name="visible" checked={visible} /> Show this station on the history map</label>
+    </section>
+
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">{isNew ? 'Create station' : 'Save changes'}</button>
+      <a class="btn btn-ghost" href="/admin/history">Cancel</a>
+      <span class="spacer"></span>
+      {m && <button class="btn btn-danger" type="submit" name="_action" value="delete" formnovalidate data-confirm={`Delete “${m.title_en}”? This can’t be undone. (To take it off the map for now, untick “Show” instead.)`}>Delete</button>}
+    </div>
+  </form>
+</Admin>

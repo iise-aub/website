@@ -1,0 +1,78 @@
+---
+import Admin from '../../layouts/Admin.astro';
+import { db } from '../../lib/db';
+import { field, logChange, now } from '../../lib/admin';
+
+type Block = { page: string; block: string; label: string; kind: string; text_en: string; text_ar: string; needs_content: number };
+const d = db();
+const load = async () => (await d.prepare('SELECT * FROM page_text ORDER BY page, sort_order, block').all<Block>()).results;
+let blocks = await load();
+const pageNames: Record<string, string> = { home: 'Homepage', join: 'Join page', team: 'Team page', about: 'About page', 'why-join': 'Why join page', 'new-to-ie': 'New to IE page', members: 'Members page', companies: 'Companies page', game: 'Weekly puzzle page', contact: 'Contact page', privacy: 'Privacy page', events: 'Events page' };
+const by = Astro.locals.user!.email;
+const errors: Record<string, string> = {};
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const page = field(form, '_page');
+  const mine = blocks.filter((b) => b.page === page);
+  const changed: { b: Block; en: string; ar: string }[] = [];
+  for (const b of mine) {
+    const en = field(form, `${b.block}_en`), ar = field(form, `${b.block}_ar`);
+    if (!en && b.text_en) errors[`${page}.${b.block}`] = 'The English text can’t be empty (the site would show a blank).';
+    if (en !== b.text_en || ar !== b.text_ar) changed.push({ b, en, ar });
+  }
+  if (Object.keys(errors).length === 0) {
+    if (changed.length) {
+      // Saving a block clears its "placeholder" mark.
+      await d.batch([
+        ...changed.map(({ b, en, ar }) => d.prepare('UPDATE page_text SET text_en = ?, text_ar = ?, needs_content = 0, updated_at = ?, updated_by = ? WHERE page = ? AND block = ?')
+          .bind(en, ar, now(), by, b.page, b.block)),
+        logChange(by, 'page_text', page, 'update', `${pageNames[page] ?? page}: ${changed.map((c) => c.b.label).join(', ')}`),
+      ]);
+    }
+    return Astro.redirect(`/admin/text?saved=${encodeURIComponent(changed.length ? `${pageNames[page] ?? page} text saved` : 'Nothing changed')}#${page}`, 303);
+  }
+  blocks = blocks.map((b) => b.page === page ? { ...b, text_en: field(form, `${b.block}_en`), text_ar: field(form, `${b.block}_ar`) } : b);
+}
+const pages = [...new Set(blocks.map((b) => b.page))];
+---
+<Admin title="Page text" active="text">
+  <div class="page-head">
+    <div>
+      <h1>Page text</h1>
+      <p>Headlines and paragraphs on each page, in English and Arabic. If the Arabic is empty, the site shows the English instead.</p>
+    </div>
+  </div>
+  <nav class="list-actions" aria-label="Pages" style="margin-bottom:16px">
+    {pages.map((p) => <a class="icon-btn" href={`#${p}`}>{pageNames[p] ?? p}</a>)}
+  </nav>
+  {pages.map((p) => (
+    <form method="post" class="card form-grid" id={p} data-guard>
+      <input type="hidden" name="_page" value={p} />
+      <h2>{pageNames[p] ?? p}</h2>
+      {blocks.filter((b) => b.page === p).map((b) => {
+        const err = errors[`${p}.${b.block}`];
+        const long = b.kind === 'long';
+        return (
+          <fieldset class="f" style="border:0;padding:0;margin:0">
+            <legend class="f-label">{b.label} {b.needs_content ? <span class="badge badge-warn">Placeholder: please write this</span> : null}</legend>
+            <div class="pair">
+              <div class="f">
+                <label class="lang-tag" for={`t-${p}-${b.block}-en`}>English</label>
+                {long ? <textarea id={`t-${p}-${b.block}-en`} name={`${b.block}_en`} aria-invalid={err ? 'true' : undefined}>{b.text_en}</textarea>
+                      : <input id={`t-${p}-${b.block}-en`} type="text" name={`${b.block}_en`} value={b.text_en} aria-invalid={err ? 'true' : undefined} />}
+              </div>
+              <div class="f">
+                <label class="lang-tag" for={`t-${p}-${b.block}-ar`}>العربية · Arabic</label>
+                {long ? <textarea id={`t-${p}-${b.block}-ar`} name={`${b.block}_ar`} dir="rtl" lang="ar">{b.text_ar}</textarea>
+                      : <input id={`t-${p}-${b.block}-ar`} type="text" name={`${b.block}_ar`} value={b.text_ar} dir="rtl" lang="ar" />}
+              </div>
+            </div>
+            {err && <p class="err">{err}</p>}
+          </fieldset>
+        );
+      })}
+      <div class="form-actions"><button class="btn btn-primary" type="submit">Save {pageNames[p] ?? p} text</button></div>
+    </form>
+  ))}
+</Admin>

@@ -1,0 +1,28 @@
+---
+// Why join (member benefits) and how to register: the club via AUB (CRN), and IISE membership via IISE's own page.
+// IISE fees and steps are not copied here because they change (brief).
+import Base from '../../layouts/Base.astro';
+import PageHead from '../../components/PageHead.astro';
+import TextSection from '../../components/TextSection.astro';
+import { isLang, pick, t } from '../../lib/i18n';
+import { loadPage } from '../../lib/db';
+
+const { lang } = Astro.params;
+if (!isLang(lang)) return Astro.rewrite('/404');
+const { settings, text } = await loadPage('why-join');
+const tx = (block: string) => pick(text[block], 'text', lang);
+const ph = (block: string) => Boolean(text[block]?.needs_content);
+const arrow = lang === 'ar' ? '←' : '→';
+---
+<Base lang={lang} title={tx('title').text} description={tx('intro').text} settings={settings}>
+  <PageHead lang={lang} eyebrow={tx('eyebrow')} title={tx('title')} intro={tx('intro')} />
+  <TextSection lang={lang} title={tx('benefits_title')} body={tx('benefits_body')} placeholder={ph('benefits_body')} tone="tint" id="benefits" />
+  <TextSection lang={lang} title={tx('register_title')} body={tx('register_text')} id="register">
+    <a class="btn btn-primary" href={`/${lang}/join`}>{t(lang, 'joinNow')} <span class="arrow" aria-hidden="true">{arrow}</span></a>
+  </TextSection>
+  <TextSection lang={lang} title={tx('iise_title')} body={tx('iise_text')} tone="navy" id="iise">
+    {settings.iise_join_url
+      ? <a class="btn btn-light" href={settings.iise_join_url} target="_blank" rel="noopener">{t(lang, 'visitIise')}<span class="visually-hidden"> {t(lang, 'newTab')}</span></a>
+      : <span class="ph-badge">{t(lang, 'linkComing')}</span>}
+  </TextSection>
+</Base>

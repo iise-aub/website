@@ -1,0 +1,88 @@
+---
+// Next-event banner. Filled automatically from the events; when nothing is scheduled it shows our social links.
+import { pick, t, type Lang, type Localized } from '../lib/i18n';
+import { formatDate, formatTime } from '../lib/time';
+import type { EventRow } from '../lib/db';
+import T from './T.astro';
+import SocialLinks from './SocialLinks.astro';
+
+interface Props { lang: Lang; event: EventRow | null; settings: Record<string, string>; emptyTitle: Localized; emptyText: Localized }
+const { lang, event, settings, emptyTitle, emptyText } = Astro.props;
+const live = event && new Date(event.starts_at).getTime() <= Date.now();
+const day = event ? formatDate(event.starts_at, lang, { weekday: undefined, month: undefined, day: 'numeric' }) : '';
+const month = event ? formatDate(event.starts_at, lang, { weekday: undefined, day: undefined, month: 'short' }) : '';
+const weekday = event ? formatDate(event.starts_at, lang, { weekday: 'long', day: undefined, month: undefined }) : '';
+const arrow = lang === 'ar' ? '←' : '→';
+---
+<section class="banner wrap" aria-labelledby="banner-title">
+  {event ? (
+    <div class="banner-card">
+      <div class="date-block" aria-hidden="true">
+        <span class="date-month">{month}</span>
+        <span class="date-day">{day}</span>
+      </div>
+      <div class="banner-body">
+        <p class="banner-label">
+          <span class:list={['dot', live && 'is-live']} aria-hidden="true"></span>
+          {live ? t(lang, 'happeningNow') : t(lang, 'nextEvent')}
+          {event.is_placeholder ? <span class="ph-badge">{t(lang, 'placeholder')}</span> : null}
+        </p>
+        <h2 id="banner-title" class="banner-title"><T v={pick(event, 'title', lang)} page={lang} /></h2>
+        <p class="banner-when">
+          <time datetime={event.starts_at}>{weekday} · {formatTime(event.starts_at, lang)}–{formatTime(event.ends_at, lang)}</time>
+          {pick(event, 'location', lang).text && <><span aria-hidden="true"> · </span><T v={pick(event, 'location', lang)} page={lang} /></>}
+        </p>
+      </div>
+      <div class="banner-actions">
+        <a class="btn btn-primary" href={`/${lang}/events/${event.slug}`}>{t(lang, 'eventDetails')} <span class="arrow" aria-hidden="true">{arrow}</span></a>
+        <a class="btn btn-ghost" href={`/events/${event.slug}.ics`}>
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M7 2h2v2h6V2h2v2h3a1 1 0 0 1 1 1v15a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3V2Zm12 8H5v9h14v-9Zm-8 2h2v2h2v2h-2v2h-2v-2H9v-2h2v-2Z"/></svg>
+          {t(lang, 'addToCalendar')}
+        </a>
+      </div>
+    </div>
+  ) : (
+    <div class="banner-card is-empty">
+      <div class="banner-body">
+        <h2 id="banner-title" class="banner-title"><T v={emptyTitle} page={lang} /></h2>
+        <T v={emptyText} page={lang} as="p" class="banner-when" />
+      </div>
+      <div class="banner-actions"><SocialLinks settings={settings} lang={lang} /></div>
+    </div>
+  )}
+</section>
+<style>
+  .banner { position: relative; z-index: 2; margin-top: -28px; }
+  .banner-card {
+    display: grid; grid-template-columns: auto 1fr; gap: 18px 20px; align-items: center;
+    background: var(--white); border: 1px solid var(--steel-200); border-radius: calc(var(--radius) + 4px);
+    padding: 18px; box-shadow: var(--shadow-lg);
+  }
+  .banner-card.is-empty { grid-template-columns: 1fr; }
+  .date-block {
+    display: grid; place-items: center; align-content: center; width: 76px; height: 84px; border-radius: 14px;
+    background: var(--navy-800); color: #fff; line-height: 1;
+  }
+  .date-month { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--steel-300); }
+  :lang(ar) .date-month { letter-spacing: 0; font-size: 0.85rem; }
+  .date-day { font-family: var(--font-display-latin); font-weight: 700; font-size: 2.4rem; margin-top: 6px; }
+  .banner-body { min-width: 0; }
+  .banner-label {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 4px; font-size: 0.75rem; font-weight: 600;
+    color: var(--slate-600); text-transform: uppercase; letter-spacing: 0.14em;
+  }
+  :lang(ar) .banner-label { text-transform: none; letter-spacing: 0; font-size: 0.9rem; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--slate-500); }
+  .dot.is-live { background: #16a34a; animation: live 1.8s var(--ease-out) infinite; }
+  @keyframes live { from { box-shadow: 0 0 0 0 rgb(22 163 74 / 0.5); } to { box-shadow: 0 0 0 10px rgb(22 163 74 / 0); } }
+  .banner-title { margin: 0 0 4px; font-size: clamp(1.45rem, 4.4vw, 2rem); }
+  .banner-when { margin: 0; color: var(--ink-soft); font-size: 0.98rem; }
+  .banner-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; }
+  .banner-actions .btn { flex: 1 1 auto; }
+  @media (min-width: 820px) {
+    .banner-card { grid-template-columns: auto 1fr auto; padding: 22px 22px 22px 22px; gap: 28px; }
+    .banner-card.is-empty { grid-template-columns: 1fr auto; }
+    .banner-actions { grid-column: auto; }
+    .banner-actions .btn { flex: none; }
+  }
+</style>

@@ -1,0 +1,5 @@
+---
+// "/" opens the language the visitor chose last time (English by default).
+const lang = Astro.cookies.get('lang')?.value === 'ar' ? 'ar' : 'en';
+return Astro.redirect(`/${lang}/`, 302);
+---

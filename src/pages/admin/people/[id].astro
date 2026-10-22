@@ -1,0 +1,126 @@
+---
+// Edit a person and their current role. Starting a new role (e.g. member → cabinet next year)
+// is done with "Start a new role", which keeps the old one on record.
+import Admin from '../../../layouts/Admin.astro';
+import BiField from '../../../components/admin/BiField.astro';
+import PhotoField from '../../../components/admin/PhotoField.astro';
+import { db } from '../../../lib/db';
+import { checked, field, getMedia, isUrlOrEmpty, logChange, now, savePhotoFromForm } from '../../../lib/admin';
+
+type Person = { id: number; name_en: string; name_ar: string; bio_en: string; bio_ar: string; linkedin_url: string; linkedin_opt_in: number; photo_media_id: number | null; grad_year: number | null };
+type Role = { id: number; role: string; position_en: string; position_ar: string; team_id: number | null; start_date: string | null; end_date: string | null; sort_order: number };
+const d = db();
+const by = Astro.locals.user!.email;
+const isNew = Astro.params.id === 'new';
+const id = isNew ? null : Number(Astro.params.id);
+if (!isNew && !Number.isInteger(id)) return Astro.redirect('/admin/people');
+const person = isNew ? null : await d.prepare('SELECT * FROM people WHERE id = ?').bind(id).first<Person>();
+if (!isNew && !person) return Astro.redirect('/admin/people?saved=' + encodeURIComponent('That person no longer exists'));
+const role = person ? await d.prepare('SELECT * FROM person_roles WHERE person_id = ? ORDER BY COALESCE(start_date, \'\') DESC, id DESC LIMIT 1').bind(person.id).first<Role>() : null;
+const history = person ? (await d.prepare('SELECT r.*, t.name_en AS team FROM person_roles r LEFT JOIN teams t ON t.id = r.team_id WHERE person_id = ? ORDER BY COALESCE(start_date, \'\') DESC, r.id DESC').bind(person.id).all<Role & { team: string | null }>()).results : [];
+const teams = (await d.prepare('SELECT id, name_en FROM teams ORDER BY sort_order').all<{ id: number; name_en: string }>()).results;
+
+const errors: Record<string, string> = {};
+let values: Record<string, string> = {};
+let postedPhoto: number | null | undefined;
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const action = field(form, '_action');
+  if (action === 'delete' && person) {
+    await d.batch([d.prepare('DELETE FROM people WHERE id = ?').bind(person.id), logChange(by, 'people', person.id, 'delete', person.name_en)]);
+    return Astro.redirect('/admin/people?saved=' + encodeURIComponent('Person deleted'), 303);
+  }
+  const names = ['name_en', 'name_ar', 'bio_en', 'bio_ar', 'linkedin_url', 'role', 'position_en', 'position_ar', 'team_id', 'start_date', 'end_date', 'sort_order'];
+  values = Object.fromEntries(names.map((n) => [n, field(form, n)]));
+  postedPhoto = await savePhotoFromForm(form, 'photo');
+  if (!values.name_en) errors.name = 'Enter the person’s name.';
+  if (!isUrlOrEmpty(values.linkedin_url)) errors.linkedin = 'This must be a full link starting with https://';
+  if (!['cabinet', 'member', 'alumni'].includes(values.role)) errors.role = 'Choose a role.';
+  if (values.role === 'member' && !values.team_id) errors.team = 'Choose which team they lead.';
+  if (values.end_date && values.start_date && values.end_date < values.start_date) errors.end = 'The end of the term must be after the start.';
+
+  if (Object.keys(errors).length === 0) {
+    const pFields = [values.name_en, values.name_ar, values.bio_en, values.bio_ar, values.linkedin_url, checked(form, 'linkedin_opt_in'), postedPhoto ?? null, now(), by];
+    const rFields = [values.role, values.position_en, values.position_ar, values.role === 'member' ? Number(values.team_id) : null, values.start_date || null, values.end_date || null, Number(values.sort_order) || 0];
+    let pid: number;
+    if (person) {
+      pid = person.id;
+      await d.prepare('UPDATE people SET name_en=?, name_ar=?, bio_en=?, bio_ar=?, linkedin_url=?, linkedin_opt_in=?, photo_media_id=?, updated_at=?, updated_by=?, is_placeholder=0 WHERE id=?').bind(...pFields, pid).run();
+    } else {
+      pid = (await d.prepare('INSERT INTO people (name_en, name_ar, bio_en, bio_ar, linkedin_url, linkedin_opt_in, photo_media_id, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id').bind(...pFields).first<{ id: number }>())!.id;
+    }
+    const newRole = action === 'new_role' || !role;
+    await d.batch([
+      newRole
+        ? d.prepare('INSERT INTO person_roles (role, position_en, position_ar, team_id, start_date, end_date, sort_order, person_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').bind(...rFields, pid)
+        : d.prepare('UPDATE person_roles SET role=?, position_en=?, position_ar=?, team_id=?, start_date=?, end_date=?, sort_order=? WHERE id=?').bind(...rFields, role!.id),
+      logChange(by, 'people', pid, person ? 'update' : 'create', values.name_en),
+    ]);
+    return Astro.redirect(`/admin/people/${pid}?saved=` + encodeURIComponent(person ? 'Saved' : 'Person added'), 303);
+  }
+}
+
+const v = (n: string, fallback: unknown = '') => (n in values ? values[n] : String(fallback ?? ''));
+const photo = await getMedia(postedPhoto !== undefined ? postedPhoto : person?.photo_media_id ?? null);
+const roleNow = v('role', role?.role ?? 'cabinet');
+---
+<Admin title={isNew ? 'Add a person' : person!.name_en} active="people">
+  <p><a href="/admin/people">← Cabinet & people</a></p>
+  <div class="page-head"><div><h1>{isNew ? 'Add a person' : person!.name_en}</h1></div></div>
+  {Object.keys(errors).length > 0 && <div class="err-box" role="alert">Please fix these:<ul>{Object.values(errors).map((e) => <li>{e}</li>)}</ul></div>}
+
+  <form method="post" data-guard>
+    <section class="card form-grid">
+      <h2>Person</h2>
+      <BiField name="name" label="Name" en={v('name_en', person?.name_en)} ar={v('name_ar', person?.name_ar)} required error={errors.name} />
+      <PhotoField name="photo" label="Photo" media={photo} hint="Square, clear face, ideally the same style for the whole cabinet. Without one, the site shows their initials." />
+      <BiField name="bio" label="Short bio (optional)" hint="One or two sentences." long en={v('bio_en', person?.bio_en)} ar={v('bio_ar', person?.bio_ar)} />
+      <div class="f">
+        <label for="f-li">LinkedIn link (optional)</label>
+        <input id="f-li" type="url" name="linkedin_url" placeholder="https://www.linkedin.com/in/…" value={v('linkedin_url', person?.linkedin_url)} aria-invalid={errors.linkedin ? 'true' : undefined} />
+        {errors.linkedin && <p class="err">{errors.linkedin}</p>}
+      </div>
+      <label class="check"><input type="checkbox" name="linkedin_opt_in" checked={Boolean(person?.linkedin_opt_in)} /> They agreed to show their LinkedIn on the site</label>
+    </section>
+
+    <section class="card form-grid">
+      <h2>{role ? 'Current role' : 'Role'}</h2>
+      <fieldset class="f" style="border:0;padding:0;margin:0">
+        <legend class="f-label">Role</legend>
+        <label class="check"><input type="radio" name="role" value="cabinet" checked={roleNow === 'cabinet'} /> Cabinet member</label>
+        <label class="check"><input type="radio" name="role" value="member" checked={roleNow === 'member'} /> Team lead</label>
+        <label class="check"><input type="radio" name="role" value="alumni" checked={roleNow === 'alumni'} /> Alumni (not shown on the Team page)</label>
+      </fieldset>
+      <BiField name="position" label="Position" hint="e.g. President, Treasurer, Team lead. Arabic job titles are gendered, so write the right form for this person." en={v('position_en', role?.position_en)} ar={v('position_ar', role?.position_ar)} />
+      <div class="f">
+        <label for="f-team">Team (for team leads)</label>
+        <select id="f-team" name="team_id" aria-invalid={errors.team ? 'true' : undefined}>
+          <option value="">—</option>
+          {teams.map((tm) => <option value={tm.id} selected={v('team_id', role?.team_id) === String(tm.id)}>{tm.name_en}</option>)}
+        </select>
+        {errors.team && <p class="err">{errors.team}</p>}
+      </div>
+      <div class="row3">
+        <div class="f"><label for="f-start">Term starts</label><input id="f-start" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" name="start_date" value={v('start_date', role?.start_date)} /></div>
+        <div class="f"><label for="f-end">Term ends (empty = current)</label><input id="f-end" type="text" inputmode="numeric" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" name="end_date" value={v('end_date', role?.end_date)} aria-invalid={errors.end ? 'true' : undefined} /></div>
+        <div class="f"><label for="f-order">Order on the page</label><input id="f-order" type="number" min="0" name="sort_order" value={v('sort_order', role?.sort_order ?? 50)} /></div>
+      </div>
+      {errors.end && <p class="err">{errors.end}</p>}
+      {history.length > 1 && (
+        <div>
+          <p class="section-label">Earlier roles</p>
+          <ul class="list">{history.slice(1).map((h) => <li class="list-meta">{h.position_en || h.role}{h.team && ` · ${h.team}`} · {h.start_date ?? '?'} → {h.end_date ?? 'now'}</li>)}</ul>
+        </div>
+      )}
+    </section>
+
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">{isNew ? 'Add person' : 'Save changes'}</button>
+      {role && <button class="btn btn-ghost" type="submit" name="_action" value="new_role" title="Keeps the current role on record and starts a new one with the details above">Save as a new role</button>}
+      <a class="btn btn-ghost" href="/admin/people">Cancel</a>
+      <span class="spacer"></span>
+      {person && <button class="btn btn-danger" type="submit" name="_action" value="delete" formnovalidate data-confirm={`Delete ${person.name_en} and all their roles? To keep them on record, set an end date instead.`}>Delete</button>}
+    </div>
+  </form>
+</Admin>

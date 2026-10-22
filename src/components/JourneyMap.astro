@@ -1,0 +1,380 @@
+---
+// History journey map: a thin road winding through time, between alternating photo and story blocks.
+// - Content is a plain ordered list (screen readers hear an ordered list; keyboard order follows the timeline).
+// - A small script draws the road up to the reader's position, with a travelling bead at its tip.
+// - The year rail at the top is the "all years" overview: every station at a glance, newest highlighted,
+//   and it stays pinned while reading, so the most recent year is always one tap away.
+// - "Reduce motion" or no JavaScript: a clean vertical timeline with the same content.
+// - Arabic: the layout uses direction-neutral CSS and the road is drawn from measured positions, so it mirrors.
+import { pick, t, type Lang, type Localized } from '../lib/i18n';
+import { formatMilestoneDate } from '../lib/time';
+import type { Milestone } from '../lib/db';
+import T from './T.astro';
+import Meridians from './Meridians.astro';
+
+interface Props {
+  lang: Lang;
+  stations: Milestone[];
+  eyebrow: Localized;
+  title: Localized;
+  intro: Localized;
+  headingLevel?: 'h1' | 'h2';
+}
+const { lang, stations, eyebrow, title, intro, headingLevel = 'h2' } = Astro.props;
+const Heading = headingLevel;
+const latestIndex = stations.length - 1;
+// A gentle, repeatable sway so the road winds rather than running straight.
+const SWAY = [0, 56, -48, 40, -58, 30, -44, 52];
+const catLabel = { ie_world: t(lang, 'cat_ie_world'), aub: t(lang, 'cat_aub'), chapter: t(lang, 'cat_chapter'), award: t(lang, 'cat_award') };
+const railLabel = (s: Milestone) => (s.is_placeholder ? t(lang, 'tbc') : String(s.year));
+---
+<section class="journey" id="journey" aria-labelledby="journey-title" data-journey>
+  <Meridians class="journey-globe" />
+  <div class="wrap">
+    <div class="journey-head" data-reveal>
+      <T v={eyebrow} page={lang} as="p" class="eyebrow" />
+      <Heading id="journey-title"><T v={title} page={lang} /></Heading>
+      <span class="title-rule" aria-hidden="true"></span>
+      <T v={intro} page={lang} as="p" class="journey-intro" />
+    </div>
+  </div>
+
+  <nav class="year-rail" aria-label={t(lang, 'allYears')} data-rail>
+    <div class="rail-inner">
+      <ol class="rail-list">
+        {stations.map((s, i) => (
+          <li>
+            <a class:list={['rail-chip', i === latestIndex && 'is-latest']} href={`#station-${i + 1}`} title={pick(s, 'title', lang).text} data-rail-chip>
+              <span class="rail-year">{railLabel(s)}</span>
+              <span class="visually-hidden">: </span>
+              <T v={pick(s, 'title', lang)} page={lang} class="rail-title" />
+              {i === latestIndex && <span class="rail-latest">{t(lang, 'latest')}</span>}
+            </a>
+          </li>
+        ))}
+        <li>
+          <a class="rail-chip rail-today" href="#station-today" data-rail-chip>
+            <span class="rail-year">{t(lang, 'today')}</span>
+          </a>
+        </li>
+      </ol>
+    </div>
+  </nav>
+
+  <div class="wrap">
+    <div class="track" data-track>
+      <svg class="track-svg" aria-hidden="true" focusable="false">
+        <path class="road-base" />
+        <path class="road-halo" />
+        <path class="road-drawn" />
+        <circle class="bead-glow" r="13" />
+        <circle class="bead" r="6" />
+      </svg>
+
+      <ol class="stations">
+        {stations.map((s, i) => {
+          const isLatest = i === latestIndex;
+          const date = s.is_placeholder ? t(lang, 'dateTbc') : formatMilestoneDate(s, lang);
+          const text = pick(s, 'text', lang);
+          const titleText = pick(s, 'title', lang);
+          return (
+            <li
+              class:list={['station', `cat-${s.category}`, i % 2 ? 'is-flipped' : '', isLatest && 'is-latest']}
+              id={`station-${i + 1}`}
+              style={`--sway:${SWAY[i % SWAY.length]}px`}
+              data-station
+            >
+              <span class="node" aria-hidden="true"></span>
+              <div class="station-media">
+                {s.photo_key ? (
+                  <img
+                    src={`/media/${s.photo_key}-960.webp`}
+                    srcset={`/media/${s.photo_key}-480.webp 480w, /media/${s.photo_key}-960.webp 960w`}
+                    sizes="(min-width: 900px) 520px, 100vw"
+                    alt="" loading="lazy" decoding="async" width="960" height="720"
+                  />
+                ) : (
+                  <div class="media-art" aria-hidden="true">
+                    <Meridians class="media-globe" />
+                    <span class="media-big">{s.is_placeholder ? catLabel[s.category] : s.year}</span>
+                    <span class="media-note">{t(lang, 'photoToCome')}</span>
+                  </div>
+                )}
+              </div>
+              <div class="station-text">
+                <p class="station-tags">
+                  <span class="pill">{date}</span>
+                  <span class="station-cat">{catLabel[s.category]}</span>
+                  {isLatest && <span class="latest-tag">{t(lang, 'latest')}</span>}
+                  {s.is_placeholder ? <span class="ph-badge">{t(lang, 'placeholder')}</span> : null}
+                </p>
+                <h3><T v={titleText} page={lang} /></h3>
+                {text.text && <T v={text} page={lang} as="p" class="station-body" />}
+                {s.href && (
+                  <a class="station-link" href={s.href}>{t(lang, 'eventDetails')} <span class="arrow" aria-hidden="true">{lang === 'ar' ? '←' : '→'}</span></a>
+                )}
+              </div>
+            </li>
+          );
+        })}
+        <li class="station station-today" id="station-today" style="--sway:0px" data-station>
+          <span class="node" aria-hidden="true"></span>
+          <div class="station-text">
+            <p class="station-tags"><span class="pill">{t(lang, 'todayStation')}</span></p>
+            <h3>{t(lang, 'todayText')}</h3>
+            <a class="btn btn-primary" href={`/${lang}/join`}>{t(lang, 'nav_join')} <span class="arrow" aria-hidden="true">{lang === 'ar' ? '←' : '→'}</span></a>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<script>
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  document.querySelectorAll<HTMLElement>('[data-journey]').forEach((root) => {
+    const track = root.querySelector<HTMLElement>('[data-track]')!;
+    const svg = track.querySelector('svg')!;
+    const [base, halo, drawn] = [...svg.querySelectorAll<SVGPathElement>('path')];
+    const bead = svg.querySelector<SVGCircleElement>('.bead')!;
+    const beadGlow = svg.querySelector<SVGCircleElement>('.bead-glow')!;
+    const stations = [...track.querySelectorAll<HTMLElement>('[data-station]')];
+    const chips = [...root.querySelectorAll<HTMLAnchorElement>('[data-rail-chip]')];
+    let total = 0;
+    let active = -1;
+
+    // Reveal blocks as they arrive (once). Without JS or with reduced motion they are simply visible.
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+    }, { rootMargin: '0px 0px -12% 0px' });
+    root.querySelectorAll('[data-reveal], [data-station]').forEach((el) => io.observe(el));
+
+    // Draw the road through the station nodes: vertical S-bends between each pair.
+    function layout() {
+      const on = !reduce.matches;
+      track.classList.toggle('has-road', on);
+      if (!on) return;
+      const box = track.getBoundingClientRect();
+      svg.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
+      const pts = stations.map((s) => {
+        const r = s.querySelector('.node')!.getBoundingClientRect();
+        return { x: r.left + r.width / 2 - box.left, y: r.top + r.height / 2 - box.top };
+      });
+      let d = `M ${pts[0].x} 0 L ${pts[0].x} ${pts[0].y}`;
+      for (let i = 1; i < pts.length; i++) {
+        const p = pts[i - 1], q = pts[i], k = (q.y - p.y) * 0.5;
+        d += ` C ${p.x} ${p.y + k}, ${q.x} ${q.y - k}, ${q.x} ${q.y}`;
+      }
+      for (const path of [base, halo, drawn]) path.setAttribute('d', d);
+      total = drawn.getTotalLength();
+      for (const path of [halo, drawn]) path.style.strokeDasharray = `${total} ${total}`;
+      update();
+    }
+
+    // Find how far along the road the reading line has reached (the road only ever goes down).
+    function lengthAtY(y: number) {
+      let lo = 0, hi = total;
+      for (let i = 0; i < 16; i++) {
+        const mid = (lo + hi) / 2;
+        if (drawn.getPointAtLength(mid).y < y) lo = mid; else hi = mid;
+      }
+      return lo;
+    }
+
+    let queued = false;
+    function update() {
+      queued = false;
+      const lineY = window.innerHeight * 0.55;
+      const box = track.getBoundingClientRect();
+      if (track.classList.contains('has-road') && total) {
+        const len = lengthAtY(lineY - box.top);
+        const off = `${total - len}`;
+        drawn.style.strokeDashoffset = off;
+        halo.style.strokeDashoffset = off;
+        const pt = drawn.getPointAtLength(len);
+        const visible = len > 2 && len < total - 2;
+        for (const c of [bead, beadGlow]) {
+          c.setAttribute('cx', String(pt.x));
+          c.setAttribute('cy', String(pt.y));
+          c.style.opacity = visible ? '1' : '0';
+        }
+      }
+      // Mark reached stations and keep the year rail in step with the reader.
+      let current = -1;
+      stations.forEach((s, i) => {
+        const reached = s.querySelector('.node')!.getBoundingClientRect().top < lineY;
+        s.classList.toggle('reached', reached);
+        if (reached) current = i;
+      });
+      if (current !== active) {
+        active = current;
+        chips.forEach((c, i) => (i === current ? c.setAttribute('aria-current', 'step') : c.removeAttribute('aria-current')));
+      }
+    }
+    const onScroll = () => { if (!queued) { queued = true; requestAnimationFrame(update); } };
+
+    new ResizeObserver(layout).observe(track);
+    reduce.addEventListener('change', layout);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    document.fonts?.ready.then(layout);
+    layout();
+    update();
+  });
+</script>
+
+<style>
+  .journey { position: relative; padding-block: 96px 24px; background: linear-gradient(180deg, var(--white) 0%, var(--steel-50) 18%, var(--steel-50) 82%, var(--white) 100%); overflow-x: clip; }
+  .journey :global(.journey-globe) { width: 560px; inset-inline-end: -220px; top: 40px; color: var(--steel-200); opacity: 0.7; }
+
+  /* Heading */
+  .journey-head { position: relative; max-width: 720px; }
+  .title-rule { display: block; width: 88px; height: 3px; border-radius: 2px; background: var(--navy-800); margin: 4px 0 22px; transform-origin: left center; }
+  :global([dir='rtl']) .title-rule { transform-origin: right center; }
+  .journey-intro { color: var(--ink-soft); font-size: 1.12rem; max-width: 56ch; margin: 0; }
+
+  /* Year rail: the all-years overview, pinned under the header while reading. */
+  .year-rail {
+    position: sticky; top: 68px; z-index: 20; margin-top: 36px;
+    background: rgb(244 247 251 / 0.86); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-block: 1px solid var(--steel-200);
+  }
+  /* Every station fits on screen at once: the strip spans the full width, chips share it equally,
+     long titles are shortened with "…". Never scrolls sideways; on phones only the years show, wrapping if needed. */
+  .rail-inner { padding-inline: var(--gutter); }
+  .rail-list { list-style: none; margin: 0; padding: 10px 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .rail-list li { flex: 1 1 0; min-width: 0; }
+  .rail-chip {
+    position: relative; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 0 12px; width: 100%; overflow: hidden;
+    border-radius: 999px; border: 1px solid var(--steel-200); background: var(--white); color: var(--navy-900);
+    text-decoration: none; white-space: nowrap; font-size: 0.9rem;
+    transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease, transform 160ms var(--ease-out);
+  }
+  .rail-chip:active { transform: scale(0.96); }
+  .rail-year { flex: none; font-family: var(--font-display-latin); font-weight: 700; font-size: 1rem; letter-spacing: 0.02em; }
+  :lang(ar) .rail-year { font-family: var(--font-arabic); }
+  .rail-chip :global(.rail-title) { color: var(--grey-600); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .rail-latest { flex: none; }
+  @media (max-width: 899px) {
+    .rail-list { gap: 6px; padding: 8px 0; }
+    .rail-list li { flex: 1 0 auto; }
+    .rail-chip { padding: 0 10px; min-height: 36px; }
+    .rail-chip :global(.rail-title), .rail-latest { display: none; }
+  }
+  .rail-latest { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--navy-800); }
+  :lang(ar) .rail-latest { letter-spacing: 0; text-transform: none; font-size: 0.8rem; }
+  .rail-chip.is-latest { border-color: var(--navy-800); }
+  .rail-chip[aria-current] { background: var(--navy-800); border-color: var(--navy-800); color: #fff; }
+  .rail-chip[aria-current] :global(.rail-title), .rail-chip[aria-current] .rail-latest { color: var(--steel-200); }
+  .rail-today { border-style: dashed; }
+  @media (hover: hover) and (pointer: fine) { .rail-chip:not([aria-current]):hover { border-color: var(--navy-800); } }
+
+  /* Track and road */
+  .track { position: relative; padding-top: 72px; }
+  .track-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; display: none; }
+  .has-road .track-svg { display: block; }
+  .road-base, .road-halo, .road-drawn { fill: none; stroke-linecap: round; }
+  .road-base { stroke: var(--steel-300); stroke-width: 1.5; }
+  .road-halo { stroke: var(--slate-500); stroke-width: 12; opacity: 0.14; }
+  .road-drawn { stroke: var(--navy-800); stroke-width: 3; }
+  .bead { fill: var(--navy-800); stroke: #fff; stroke-width: 2.5; transition: opacity 200ms ease; }
+  .bead-glow { fill: var(--slate-500); opacity: 0.25; transition: opacity 200ms ease; }
+
+  .stations { list-style: none; margin: 0; padding: 0; position: relative; }
+
+  /* Plain vertical timeline (no JS / reduced motion). */
+  .stations::before {
+    content: ''; position: absolute; inset-block: 0 40px; inset-inline-start: 13px; width: 2px; background: var(--steel-300);
+  }
+  .has-road .stations::before { display: none; }
+
+  /* Phone: road down the side, media above text. */
+  .station { position: relative; display: grid; gap: 22px; padding-inline-start: 44px; margin-bottom: 72px; }
+  .node {
+    position: absolute; top: 6px; inset-inline-start: calc(6px + var(--sway) * 0.12); width: 16px; height: 16px; border-radius: 50%;
+    background: var(--white); border: 2px solid var(--steel-400); z-index: 2;
+    transition: background-color 300ms ease, border-color 300ms ease, box-shadow 300ms ease;
+  }
+  .station.reached .node { background: var(--navy-800); border-color: var(--navy-800); box-shadow: 0 0 0 5px rgb(28 55 104 / 0.14); }
+  .cat-award .node { border-radius: 4px; transform: rotate(45deg); }
+  .is-latest .node { width: 22px; height: 22px; top: 3px; margin-inline-start: -3px; box-shadow: 0 0 0 6px rgb(28 55 104 / 0.12); }
+
+  .station-media { border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); aspect-ratio: 4 / 3; background: var(--steel-100); }
+  .station-media img { width: 100%; height: 100%; object-fit: cover; }
+  .media-art {
+    position: relative; height: 100%; display: grid; place-items: center; overflow: hidden;
+    background: radial-gradient(120% 90% at 20% 10%, var(--slate-600) 0%, var(--navy-800) 55%, var(--navy-950) 100%);
+  }
+  .cat-aub .media-art { background: radial-gradient(120% 90% at 80% 10%, var(--steel-400) 0%, var(--slate-600) 50%, var(--navy-800) 100%); }
+  .cat-award .media-art { background: radial-gradient(110% 90% at 50% 0%, var(--navy-700) 0%, var(--navy-950) 70%); }
+  .media-art :global(.media-globe) { width: 120%; color: rgb(255 255 255 / 0.12); inset-inline-start: -10%; top: 4%; }
+  .media-big {
+    position: relative; font-family: var(--font-display); font-weight: 700; color: #fff; text-align: center; padding-inline: 16px;
+    font-size: clamp(2.2rem, 9vw, 4.2rem); line-height: 1; letter-spacing: -0.01em; text-wrap: balance;
+  }
+  .media-note {
+    position: absolute; bottom: 14px; inset-inline-start: 16px; font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--steel-300);
+  }
+  :lang(ar) .media-note { letter-spacing: 0; text-transform: none; font-size: 0.85rem; }
+
+  .station-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 14px; }
+  .station-cat { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--grey-600); }
+  :lang(ar) .station-cat { letter-spacing: 0; text-transform: none; font-size: 0.95rem; }
+  .latest-tag { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #fff; background: var(--navy-800); border-radius: 999px; padding: 3px 10px; }
+  :lang(ar) .latest-tag { letter-spacing: 0; text-transform: none; font-size: 0.85rem; }
+  .station-text h3 { margin-bottom: 12px; }
+  .station-body { color: var(--ink-soft); font-size: 1.05rem; max-width: 52ch; }
+  .station-link { font-weight: 600; text-decoration: none; display: inline-flex; gap: 6px; align-items: center; }
+  .station-link:hover { text-decoration: underline; }
+
+  .station-today { margin-bottom: 0; }
+  .station-today .node { background: var(--white); border: 3px solid var(--navy-800); width: 22px; height: 22px; top: 3px; margin-inline-start: -3px; }
+  .station-today.reached .node { box-shadow: 0 0 0 8px rgb(28 55 104 / 0.12); }
+  .station-today h3 { max-width: 18ch; }
+
+  /* Reveal on arrival (only with JS and without reduced motion). */
+  @media (prefers-reduced-motion: no-preference) {
+    :global(.js) .journey-head .title-rule { transform: scaleX(0); transition: transform 900ms var(--ease-out) 200ms; }
+    :global(.js) .journey-head.in .title-rule { transform: none; }
+    :global(.js) .station .station-text, :global(.js) .station .station-media {
+      opacity: 0; transform: translateY(28px);
+      transition: opacity 700ms var(--ease-out), transform 900ms var(--ease-out);
+    }
+    :global(.js) .station .station-media { clip-path: inset(10% 0 0 0 round var(--radius)); transition: opacity 700ms var(--ease-out), transform 900ms var(--ease-out), clip-path 1000ms var(--ease-out); }
+    :global(.js) .station.in .station-media { clip-path: inset(0 0 0 0 round var(--radius)); }
+    :global(.js) .station.in .station-text, :global(.js) .station.in .station-media { opacity: 1; transform: none; }
+    :global(.js) .station.in .station-text { transition-delay: 90ms; }
+  }
+
+  /* Wide screens: media and story alternate sides; the road winds down the middle. */
+  @media (min-width: 900px) {
+    .track { padding-top: 96px; }
+    .has-road .station, .station {
+      grid-template-columns: minmax(0, 1fr) 160px minmax(0, 1fr); gap: 0; align-items: center;
+      padding-inline-start: 0; margin-bottom: 128px;
+    }
+    .station .station-media { grid-column: 1; grid-row: 1; }
+    .station .station-text { grid-column: 3; grid-row: 1; }
+    .station.is-flipped .station-media { grid-column: 3; }
+    .station.is-flipped .station-text { grid-column: 1; }
+    .node { top: calc(50% - 8px); inset-inline-start: calc(50% - 8px + var(--sway)); }
+    .is-latest .node, .station-today .node { top: calc(50% - 11px); inset-inline-start: calc(50% - 11px + var(--sway)); margin: 0; }
+    .station-today, .has-road .station-today { grid-template-columns: 1fr; justify-items: center; text-align: center; padding-top: 72px; }
+    .station-today .node { top: 0; }
+    .station-today .station-text { grid-column: 1; display: grid; justify-items: center; }
+    .station-today .station-tags { justify-content: center; }
+    .stations::before { inset-inline-start: calc(50% - 1px); }
+  }
+
+  /* Reduced motion: one clean column at every width, straight line, nothing moves. */
+  @media (prefers-reduced-motion: reduce) {
+    .year-rail { position: static; }
+    .station, .has-road .station { display: grid; grid-template-columns: 1fr; gap: 22px; padding-inline-start: 44px; margin-bottom: 72px; }
+    .station .station-media, .station .station-text, .station.is-flipped .station-media, .station.is-flipped .station-text { grid-column: 1; grid-row: auto; }
+    .node, .is-latest .node, .station-today .node { top: 6px; inset-inline-start: 6px; margin: 0; }
+    .stations::before { inset-inline-start: 13px; }
+    .station-today { justify-items: start; text-align: start; padding-top: 0; }
+    .station-today .station-text { justify-items: start; }
+    .station-media { max-width: 640px; }
+  }
+</style>

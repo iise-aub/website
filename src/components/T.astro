@@ -1,0 +1,10 @@
+---
+// Renders a database text. If the Arabic was empty and English is shown instead,
+// it marks that part as English so it reads left to right. Placeholders are highlighted.
+import type { HTMLTag } from 'astro/types';
+import type { Localized, Lang } from '../lib/i18n';
+interface Props { v: Localized; as?: HTMLTag; page: Lang; placeholder?: boolean; class?: string }
+const { v, as: Tag = 'span', page, placeholder = false, class: cls } = Astro.props;
+const fallback = v.lang !== page;
+---
+<Tag class:list={[cls, placeholder && 'ph-text']} lang={fallback ? v.lang : undefined} dir={fallback ? 'ltr' : undefined}>{v.text}</Tag>

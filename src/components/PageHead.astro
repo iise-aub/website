@@ -1,0 +1,23 @@
+---
+// Standard top of an inner page: small label, title, intro. All three come from the panel's page text.
+import T from './T.astro';
+import type { Lang, Localized } from '../lib/i18n';
+interface Props { lang: Lang; eyebrow?: Localized; title: Localized; intro?: Localized; placeholder?: { title?: boolean; intro?: boolean } }
+const { lang, eyebrow, title, intro, placeholder = {} } = Astro.props;
+---
+<header class="page-head wrap">
+  <div class="inner">
+    {eyebrow?.text && <T v={eyebrow} page={lang} as="p" class="eyebrow" />}
+    <h1><T v={title} page={lang} placeholder={placeholder.title} /></h1>
+    <span class="head-rule" aria-hidden="true"></span>
+    {intro?.text && <T v={intro} page={lang} as="p" class="lede" placeholder={placeholder.intro} />}
+    <slot />
+  </div>
+</header>
+<style>
+  .page-head { padding-block: 52px 8px; }
+  .inner { max-width: 760px; }
+  .page-head h1 { font-size: clamp(2.3rem, 6vw, 3.8rem); margin-bottom: 12px; }
+  .head-rule { display: block; width: 72px; height: 3px; border-radius: 2px; background: var(--navy-800); margin-bottom: 18px; }
+  .lede { font-size: 1.2rem; color: var(--ink-soft); max-width: 56ch; }
+</style>

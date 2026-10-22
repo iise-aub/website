@@ -1,0 +1,151 @@
+---
+import Base from '../../layouts/Base.astro';
+import T from '../../components/T.astro';
+import EventBanner from '../../components/EventBanner.astro';
+import JourneyMap from '../../components/JourneyMap.astro';
+import LogoGlobe from '../../components/LogoGlobe.astro';
+import GameTeaser from '../../components/GameTeaser.astro';
+import { isLang, pick, t } from '../../lib/i18n';
+import { loadHome } from '../../lib/db';
+
+const { lang } = Astro.params;
+if (!isLang(lang)) return Astro.rewrite('/404');
+
+const { settings, text, nextEvent, stations } = await loadHome(lang);
+const tx = (block: string) => pick(text[block], 'text', lang);
+const ph = (block: string) => Boolean(text[block]?.needs_content);
+// IE fields shown around the globe: one per line (or separated by "|") in the panel.
+const fieldsText = tx('hero_fields');
+const fields = fieldsText.text.split(/\n|\|/).map((f) => f.trim()).filter(Boolean).map((text) => ({ text, lang: fieldsText.lang }));
+const arrow = lang === 'ar' ? '←' : '→';
+
+const doors = [
+  { key: 'new', href: `/${lang}/new-to-ie` },
+  { key: 'members', href: `/${lang}/members` },
+  { key: 'partners', href: `/${lang}/companies` },
+];
+---
+<Base lang={lang} title="IISE AUB" description={tx('hero_text').text} settings={settings}>
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <T v={tx('hero_eyebrow')} page={lang} as="p" class="eyebrow hero-eyebrow" placeholder={ph('hero_eyebrow')} />
+        <h1><T v={tx('hero_title')} page={lang} placeholder={ph('hero_title')} /></h1>
+        <T v={tx('hero_text')} page={lang} as="p" class="lede" placeholder={ph('hero_text')} />
+        <div class="hero-actions">
+          <a class="btn btn-primary btn-lg" href={`/${lang}/join`}><T v={tx('join_button')} page={lang} /> <span class="arrow" aria-hidden="true">{arrow}</span></a>
+          <a class="btn btn-ghost btn-lg" href="#journey">{t(lang, 'explore')}</a>
+        </div>
+      </div>
+
+      <!-- The globe from the IISE logo, ringed by fields of industrial engineering. -->
+      <div class="globe-stage">
+        <LogoGlobe />
+        {fields.length > 0 && (
+          <ul class="fields" aria-label={tx('hero_fields_label').text || undefined}>
+            {fields.map((f, i) => <li class="field" style={`--i:${i}`}><T v={f} page={lang} /></li>)}
+          </ul>
+        )}
+      </div>
+    </div>
+  </section>
+
+  <EventBanner lang={lang} event={nextEvent} settings={settings} emptyTitle={tx('banner_empty_title')} emptyText={tx('banner_empty_text')} />
+
+  <JourneyMap lang={lang} stations={stations} eyebrow={tx('journey_eyebrow')} title={tx('journey_title')} intro={tx('journey_intro')} />
+
+  <section class="doors" aria-labelledby="doors-title">
+    <div class="wrap">
+      <p class="eyebrow">{t(lang, 'doorsEyebrow')}</p>
+      <h2 id="doors-title"><T v={tx('doors_title')} page={lang} /></h2>
+      <ul class="door-list">
+        {doors.map((d, i) => (
+          <li>
+            <a class="door" href={d.href}>
+              <span class="door-num" aria-hidden="true">0{i + 1}</span>
+              <span class="door-title"><T v={tx(`door_${d.key}_title`)} page={lang} /></span>
+              <T v={tx(`door_${d.key}_text`)} page={lang} class="door-text" />
+              <span class="door-go" aria-hidden="true"><span class="arrow">{arrow}</span></span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <GameTeaser lang={lang} />
+</Base>
+
+<style>
+  .hero { position: relative; overflow: hidden; padding-block: 40px 88px; }
+  .hero-grid { position: relative; display: grid; gap: 20px; align-items: center; }
+  .hero-eyebrow { margin-bottom: 18px; }
+  .hero h1 { max-width: 17ch; margin-bottom: 20px; font-size: clamp(2.3rem, 5.4vw, 4.1rem); }
+  .hero { background: radial-gradient(60% 70% at 85% 40%, var(--steel-50) 0%, rgb(245 247 250 / 0) 70%); }
+  .lede { font-size: 1.15rem; color: var(--ink-soft); max-width: 50ch; }
+  .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+  .btn-lg { min-height: 54px; padding-inline: 1.6em; }
+  @media (min-width: 940px) {
+    .hero { padding-block: 72px 120px; }
+    .hero-grid { grid-template-columns: 1.05fr 1fr; gap: 40px; }
+  }
+
+  /* Globe stage */
+  .globe-stage { position: relative; width: min(100%, 340px); margin-inline: auto; margin-top: -12px; }
+  @media (min-width: 940px) { .globe-stage { width: min(100%, 560px); margin-top: 0; } }
+  .fields { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+  .field {
+    display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px 6px 12px; border-radius: 999px;
+    background: rgb(255 255 255 / 0.92); border: 1px solid var(--steel-200); box-shadow: var(--shadow-sm);
+    font-size: 0.92rem; font-weight: 600; color: var(--navy-800); white-space: nowrap;
+  }
+  .field::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--steel-400); }
+  @media (min-width: 940px) {
+    .fields { position: absolute; inset: 0; margin: 0; display: block; pointer-events: none; }
+    .field { position: absolute; }
+    .field:nth-child(1) { top: 4%; inset-inline-start: 2%; }
+    .field:nth-child(2) { top: 16%; inset-inline-end: -2%; }
+    .field:nth-child(3) { top: 50%; inset-inline-start: -6%; }
+    .field:nth-child(4) { bottom: 14%; inset-inline-end: 0; }
+    .field:nth-child(5) { bottom: 0; inset-inline-start: 18%; }
+    .field:nth-child(n + 6) { display: none; }
+  }
+  @media (min-width: 940px) and (prefers-reduced-motion: no-preference) {
+    .field { animation: field-in 600ms var(--ease-out) both, bob 6s ease-in-out infinite; animation-delay: calc(700ms + var(--i) * 90ms), calc(var(--i) * -1.3s); }
+  }
+  @keyframes field-in { from { opacity: 0; transform: translateY(8px) scale(0.96); } to { opacity: 1; transform: none; } }
+  @keyframes bob { 0%, 100% { translate: 0 0; } 50% { translate: 0 -5px; } }
+
+  /* Three doors */
+  .doors { padding-block: 72px 0; }
+  .door-list { list-style: none; margin: 28px 0 0; padding: 0; display: grid; gap: 14px; }
+  @media (min-width: 860px) { .door-list { grid-template-columns: repeat(3, 1fr); gap: 18px; } }
+  .door {
+    position: relative; display: grid; gap: 10px; align-content: start; height: 100%; padding: 26px 26px 76px;
+    background: var(--white); border: 1px solid var(--steel-200); border-radius: var(--radius);
+    color: var(--navy-900); text-decoration: none; overflow: hidden;
+    transition: border-color 220ms ease, box-shadow 300ms var(--ease-out), transform 160ms var(--ease-out);
+  }
+  .door::after {
+    content: ''; position: absolute; inset-inline: 0; bottom: 0; height: 4px; background: var(--navy-800);
+    transform: scaleX(0); transform-origin: left center; transition: transform 400ms var(--ease-out);
+  }
+  :global([dir='rtl']) .door::after { transform-origin: right center; }
+  .door:active { transform: scale(0.985); }
+  .door-num { font-family: var(--font-display-latin); font-weight: 700; font-size: 0.95rem; letter-spacing: 0.1em; color: var(--steel-400); }
+  .door-title { font-family: var(--font-display); font-size: 1.75rem; font-weight: 700; line-height: 1.1; }
+  .door-text { color: var(--ink-soft); }
+  .door-go {
+    position: absolute; inset-inline-start: 26px; bottom: 22px; display: inline-grid; place-items: center;
+    width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--steel-200); color: var(--navy-800);
+    transition: background-color 220ms ease, color 220ms ease, border-color 220ms ease;
+  }
+  .door-go .arrow { transition: transform 220ms var(--ease-out); }
+  @media (hover: hover) and (pointer: fine) {
+    .door:hover { border-color: var(--steel-300); box-shadow: var(--shadow); color: var(--navy-900); }
+    .door:hover::after { transform: scaleX(1); }
+    .door:hover .door-go { background: var(--navy-800); border-color: var(--navy-800); color: #fff; }
+    .door:hover .door-go .arrow { transform: translateX(2px); }
+    :global([dir='rtl']) .door:hover .door-go .arrow { transform: translateX(-2px); }
+  }
+</style>

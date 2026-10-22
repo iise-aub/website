@@ -1,0 +1,48 @@
+---
+import Base from '../../../layouts/Base.astro';
+import T from '../../../components/T.astro';
+import PageHead from '../../../components/PageHead.astro';
+import EventCard from '../../../components/EventCard.astro';
+import SocialLinks from '../../../components/SocialLinks.astro';
+import { isLang, pick, t } from '../../../lib/i18n';
+import { loadEventsPage } from '../../../lib/db';
+
+const { lang } = Astro.params;
+if (!isLang(lang)) return Astro.rewrite('/404');
+const { settings, text, upcoming, past } = await loadEventsPage();
+const tx = (block: string) => pick(text[block], 'text', lang);
+---
+<Base lang={lang} title={tx('eyebrow').text} description={tx('intro').text} settings={settings}>
+  <PageHead lang={lang} eyebrow={tx('eyebrow')} title={tx('title')} intro={tx('intro')}>
+    <p class="tz">{t(lang, 'timesNote')}</p>
+  </PageHead>
+
+  <section class="wrap block" aria-label={tx('title').text}>
+    {upcoming.length > 0 ? (
+      <ul class="events">{upcoming.map((e) => <li><EventCard lang={lang} event={e} /></li>)}</ul>
+    ) : (
+      <div class="empty">
+        <T v={tx('empty')} page={lang} as="p" />
+        <SocialLinks settings={settings} lang={lang} />
+      </div>
+    )}
+  </section>
+
+  {past.length > 0 && (
+    <section class="wrap block" aria-labelledby="past-title">
+      <h2 id="past-title"><T v={tx('past_title')} page={lang} /></h2>
+      <p class="note">{t(lang, 'pastEventsNote')}</p>
+      <ul class="events past">{past.map((e) => <li><EventCard lang={lang} event={e} past /></li>)}</ul>
+    </section>
+  )}
+</Base>
+<style>
+  .tz { color: var(--grey-600); font-size: 0.95rem; margin: 0; }
+  .block { padding-block: 28px; }
+  .block h2 { font-size: clamp(1.7rem, 4.5vw, 2.3rem); }
+  .events { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+  @media (min-width: 900px) { .events.past { grid-template-columns: 1fr 1fr; } }
+  .empty { background: var(--steel-50); border: 1px solid var(--steel-200); border-radius: var(--radius); padding: 24px; display: grid; gap: 14px; }
+  .empty p { margin: 0; font-size: 1.1rem; }
+  .note { color: var(--grey-600); }
+</style>

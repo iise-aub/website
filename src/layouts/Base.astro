@@ -1,0 +1,241 @@
+---
+import '@fontsource-variable/source-sans-3/wght.css';
+import '@fontsource-variable/noto-sans-arabic/wght.css';
+import '../styles/global.css';
+import { env } from 'cloudflare:workers';
+import { dir, t, otherLangPath, type Lang } from '../lib/i18n';
+import SocialLinks from '../components/SocialLinks.astro';
+import Meridians from '../components/Meridians.astro';
+
+interface Props {
+  lang: Lang;
+  title: string;
+  description?: string;
+  settings: Record<string, string>;
+  image?: string;
+}
+const { lang, title, description = '', settings, image } = Astro.props;
+const site = (env.SITE_URL as string) || Astro.url.origin;
+const path = Astro.url.pathname;
+const alternate = otherLangPath(path, lang);
+const other = lang === 'en' ? 'ar' : 'en';
+const siteName = 'IISE AUB';
+const fullTitle = title === siteName ? title : `${title} · ${siteName}`;
+const ogImage = image ? new URL(image, site).href : new URL('/og-default.png', site).href;
+
+const nav = [
+  ['about', 'nav_about'], ['events', 'nav_events'], ['team', 'nav_team'],
+  ['history', 'nav_history'], ['game', 'nav_game'], ['contact', 'nav_contact'],
+] as const;
+const isCurrent = (slug: string) => path.startsWith(`/${lang}/${slug}`);
+---
+<!doctype html>
+<html lang={lang} dir={dir(lang)}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script is:inline>document.documentElement.classList.add('js');</script>
+    <title>{fullTitle}</title>
+    {description && <meta name="description" content={description} />}
+    <link rel="canonical" href={new URL(path, site).href} />
+    <link rel="alternate" hreflang={lang} href={new URL(path, site).href} />
+    <link rel="alternate" hreflang={other} href={new URL(alternate, site).href} />
+    <link rel="alternate" hreflang="x-default" href={new URL(path.replace(/^\/(en|ar)/, '/en'), site).href} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={siteName} />
+    <meta property="og:title" content={fullTitle} />
+    {description && <meta property="og:description" content={description} />}
+    <meta property="og:url" content={new URL(path, site).href} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:locale" content={lang === 'ar' ? 'ar_LB' : 'en_US'} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">{t(lang, 'skip')}</a>
+    <header class="site-header">
+      <div class="wrap header-row">
+        <a class="brand" href={`/${lang}/`}>
+          <picture>
+            <source srcset="/brand/iise-logo.webp" type="image/webp" />
+            <img class="brand-logo" src="/brand/iise-logo.png" width="536" height="186" alt="IISE: Institute of Industrial &amp; Systems Engineers" />
+          </picture>
+          <span class="brand-sub"><span>AUB</span><span>Student Chapter</span></span>
+        </a>
+        {settings.crn && (
+          <a class="crn-chip" href={`/${lang}/join`}>
+            <span class="crn-chip-label">{t(lang, 'crn')}:</span> <span class="crn-chip-num">{settings.crn}</span>
+          </a>
+        )}
+        <nav class="nav" aria-label={t(lang, 'menu')}>
+          <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="nav-list">
+            <span class="burger" aria-hidden="true"><span></span><span></span></span>
+            <span class="visually-hidden">{t(lang, 'menu')}</span>
+          </button>
+          <ul id="nav-list" class="nav-list">
+            {nav.map(([slug, key], i) => (
+              <li style={`--i:${i}`}><a href={`/${lang}/${slug}`} aria-current={isCurrent(slug) ? 'page' : undefined}>{t(lang, key)}</a></li>
+            ))}
+          </ul>
+        </nav>
+        <a class="lang-switch" href={alternate} hreflang={other} lang={other}
+           aria-label={t(lang, 'switchLangLabel')} data-lang-switch={other}>{t(lang, 'switchLang')}</a>
+        <a class="btn btn-primary join-cta" href={`/${lang}/join`}>{t(lang, 'nav_join')}</a>
+      </div>
+    </header>
+
+    <main id="main"><slot /></main>
+
+    <footer class="site-footer">
+      <Meridians class="footer-meridians" />
+      <div class="wrap footer-grid">
+        <div>
+          <p class="brand footer-brand">
+            <picture>
+              <source srcset="/brand/iise-logo-white.webp" type="image/webp" />
+              <img class="brand-logo" src="/brand/iise-logo-white.png" width="536" height="186" alt="IISE: Institute of Industrial &amp; Systems Engineers" loading="lazy" />
+            </picture>
+            <span class="brand-sub"><span>AUB</span><span>Student Chapter</span></span>
+          </p>
+          <p class="footer-tagline">{t(lang, 'footerTagline')}</p>
+        </div>
+        <div>
+          <p class="eyebrow footer-eyebrow">{t(lang, 'followUs')}</p>
+          <SocialLinks settings={settings} lang={lang} variant="dark" />
+        </div>
+        <ul class="footer-links">
+          <li><a href={`/${lang}/contact`}>{t(lang, 'contact')}</a></li>
+          <li><a href={`/${lang}/companies`}>{t(lang, 'nav_companies')}</a></li>
+          <li><a href={`/${lang}/privacy`}>{t(lang, 'privacy')}</a></li>
+          <li><a href={alternate} lang={other} data-lang-switch={other}>{t(lang, 'switchLang')}</a></li>
+        </ul>
+      </div>
+    </footer>
+
+    <script>
+      // Remember the chosen language for the next visit (a functional cookie, no tracking).
+      document.querySelectorAll<HTMLAnchorElement>('[data-lang-switch]').forEach((a) =>
+        a.addEventListener('click', () => {
+          document.cookie = `lang=${a.dataset.langSwitch}; path=/; max-age=31536000; samesite=lax`;
+        }),
+      );
+      // Mobile menu.
+      const toggle = document.querySelector<HTMLButtonElement>('.menu-toggle');
+      const setMenu = (open: boolean) => {
+        toggle?.setAttribute('aria-expanded', String(open));
+        document.documentElement.classList.toggle('menu-open', open);
+      };
+      toggle?.addEventListener('click', () => setMenu(toggle.getAttribute('aria-expanded') !== 'true'));
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && toggle?.getAttribute('aria-expanded') === 'true') { setMenu(false); toggle.focus(); }
+      });
+      // Header gains a hairline once the page scrolls.
+      const header = document.querySelector('.site-header');
+      const onScroll = () => header?.classList.toggle('is-scrolled', window.scrollY > 8);
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+    </script>
+  </body>
+</html>
+
+<style>
+  .site-header {
+    position: sticky; top: 0; z-index: 50;
+    background: rgb(255 255 255 / 0.88); backdrop-filter: saturate(1.4) blur(12px); -webkit-backdrop-filter: saturate(1.4) blur(12px);
+    border-bottom: 1px solid transparent; transition: border-color 200ms ease, box-shadow 200ms ease;
+  }
+  .site-header.is-scrolled { border-color: var(--steel-200); box-shadow: 0 6px 20px -16px rgb(18 38 79 / 0.4); }
+  .header-row { display: flex; align-items: center; gap: 10px; min-height: 68px; }
+
+  .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--navy-900); margin: 0; }
+  .brand-logo { display: block; height: 46px; width: auto; }
+  @media (max-width: 380px) { .brand-logo { height: 40px; } }
+  .brand-sub {
+    display: grid; font-family: var(--font-latin); line-height: 1.15; padding-inline-start: 10px;
+    border-inline-start: 1.5px solid var(--steel-300);
+  }
+  .brand-sub span:first-child { font-weight: 700; font-size: 0.82rem; letter-spacing: 0.14em; color: var(--navy-800); }
+  .brand-sub span:last-child { font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--grey-600); }
+  @media (max-width: 560px) { .header-row .brand-sub { display: none; } }
+
+  .crn-chip {
+    display: none; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border-radius: 999px;
+    border: 1px solid var(--steel-200); color: var(--navy-900); text-decoration: none;
+    font-family: var(--font-latin); font-size: 0.8rem; letter-spacing: 0.08em; white-space: nowrap;
+    transition: border-color 180ms ease;
+  }
+  .crn-chip:hover { border-color: var(--navy-800); color: var(--navy-900); }
+  .crn-chip-label { color: var(--grey-600); }
+  .crn-chip-num { font-weight: 700; }
+  @media (min-width: 640px) { .crn-chip { display: inline-flex; margin-inline-start: 8px; } }
+
+  .nav { order: 4; margin-inline-start: auto; }
+  .lang-switch { margin-inline-start: auto; }
+  .menu-toggle {
+    display: inline-grid; place-items: center; width: 44px; height: 44px; padding: 0;
+    background: var(--white); border: 1px solid var(--steel-200); border-radius: 50%; cursor: pointer; color: var(--navy-900);
+    transition: transform 160ms var(--ease-out), border-color 180ms ease;
+  }
+  .menu-toggle:active { transform: scale(0.94); }
+  .burger { display: grid; gap: 5px; width: 18px; }
+  .burger span { display: block; height: 2px; border-radius: 2px; background: currentColor; transition: transform 220ms var(--ease-out); }
+  .menu-toggle[aria-expanded='true'] .burger span:first-child { transform: translateY(3.5px) rotate(45deg); }
+  .menu-toggle[aria-expanded='true'] .burger span:last-child { transform: translateY(-3.5px) rotate(-45deg); }
+
+  .nav-list {
+    list-style: none; margin: 0; padding: 8px var(--gutter) 24px;
+    position: absolute; inset-inline: 0; top: 68px; background: var(--white); border-bottom: 1px solid var(--steel-200);
+    box-shadow: 0 24px 40px -24px rgb(18 38 79 / 0.35);
+    visibility: hidden; opacity: 0; transform: translateY(-6px);
+    transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out), visibility 0s linear 200ms;
+  }
+  .menu-toggle[aria-expanded='true'] + .nav-list { visibility: visible; opacity: 1; transform: none; transition-delay: 0s; }
+  .nav-list a {
+    display: block; padding: 14px 2px; text-decoration: none; color: var(--navy-900);
+    font-family: var(--font-display); font-weight: 700; font-size: 1.6rem; line-height: 1.2; border-bottom: 1px solid var(--steel-100);
+  }
+  .nav-list a[aria-current='page'] { color: var(--slate-600); }
+
+  .lang-switch {
+    min-height: 44px; display: inline-flex; align-items: center; padding: 0 12px;
+    font-weight: 600; text-decoration: none; color: var(--navy-900); border-radius: 999px;
+    transition: background-color 180ms ease;
+  }
+  .lang-switch:hover { background: var(--steel-100); color: var(--navy-900); }
+  .join-cta { min-height: 44px; padding: 0.5em 1.2em; }
+  @media (max-width: 380px) { .join-cta { padding-inline: 0.9em; } .lang-switch { padding: 0 8px; } }
+
+  @media (min-width: 1000px) {
+    .nav { order: 0; margin-inline-start: auto; }
+    .lang-switch { margin-inline-start: 0; }
+    .menu-toggle { display: none; }
+    .nav-list {
+      display: flex; gap: 2px; position: static; padding: 0; background: none; border: 0; box-shadow: none;
+      visibility: visible; opacity: 1; transform: none;
+    }
+    .nav-list a {
+      border: 0; padding: 10px 12px; border-radius: 999px; font-family: var(--font-latin); font-weight: 600;
+      font-size: 0.82rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--grey-600);
+      transition: color 180ms ease, background-color 180ms ease;
+    }
+    :lang(ar) .nav-list a { font-family: var(--font-arabic); letter-spacing: 0; text-transform: none; font-size: 1rem; }
+    .nav-list a:hover, .nav-list a[aria-current='page'] { color: var(--navy-900); background: var(--steel-50); }
+  }
+
+  .site-footer { position: relative; overflow: hidden; background: var(--navy-950); color: #d5ddea; margin-top: 96px; padding-block: 64px 48px; }
+  .site-footer :global(.footer-meridians) { color: rgb(255 255 255 / 0.06); width: 640px; inset-inline-end: -160px; top: -120px; }
+  .footer-grid { position: relative; display: grid; gap: 32px; }
+  @media (min-width: 760px) { .footer-grid { grid-template-columns: 1.4fr 1.2fr auto; align-items: start; } }
+  .footer-brand { margin: 0 0 14px; }
+  .footer-brand .brand-logo { height: 56px; }
+  .footer-brand .brand-sub { border-color: rgb(255 255 255 / 0.25); }
+  .footer-brand .brand-sub span:first-child { color: #fff; }
+  .footer-brand .brand-sub span:last-child { color: var(--steel-300); }
+  .footer-tagline { color: var(--steel-300); max-width: 40ch; margin: 0; }
+  .footer-eyebrow { color: var(--steel-300); }
+  .footer-links { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .footer-links a { color: #fff; display: inline-block; padding: 8px 0; text-decoration: none; }
+  .footer-links a:hover { text-decoration: underline; color: #fff; }
+  .site-footer :global(.ph-badge) { margin: 0; }
+</style>

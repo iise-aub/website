@@ -1,0 +1,42 @@
+---
+// Renders a long text from the panel: a blank line starts a new paragraph,
+// and lines starting with "- " become a bulleted list. No HTML is ever interpreted.
+import type { Lang, Localized } from '../lib/i18n';
+interface Props { v: Localized; page: Lang; placeholder?: boolean; class?: string }
+const { v, page, placeholder = false, class: cls } = Astro.props;
+const fallback = v.lang !== page;
+type Block = { kind: 'p'; lines: string[] } | { kind: 'ul'; items: string[] };
+const blocks: Block[] = [];
+for (const chunk of v.text.replace(/\r/g, '').split(/\n\s*\n/)) {
+  const lines = chunk.split('\n').map((l) => l.trim()).filter(Boolean);
+  let para: string[] = [];
+  let list: string[] = [];
+  for (const line of lines) {
+    if (/^[-•]\s+/.test(line)) {
+      if (para.length) { blocks.push({ kind: 'p', lines: para }); para = []; }
+      list.push(line.replace(/^[-•]\s+/, ''));
+    } else {
+      if (list.length) { blocks.push({ kind: 'ul', items: list }); list = []; }
+      para.push(line);
+    }
+  }
+  if (para.length) blocks.push({ kind: 'p', lines: para });
+  if (list.length) blocks.push({ kind: 'ul', items: list });
+}
+---
+<div class:list={['rich', cls, placeholder && 'is-placeholder']} lang={fallback ? v.lang : undefined} dir={fallback ? 'ltr' : undefined}>
+  {blocks.map((b) => b.kind === 'p'
+    ? <p>{b.lines.map((l, i) => <>{i > 0 && <br />}{l}</>)}</p>
+    : <ul>{b.items.map((it) => <li>{it}</li>)}</ul>)}
+</div>
+<style>
+  .rich { color: var(--ink-soft); font-size: 1.08rem; }
+  .rich :global(p:last-child), .rich :global(ul:last-child) { margin-bottom: 0; }
+  .rich :global(ul) { list-style: none; padding: 0; margin: 0 0 1em; display: grid; gap: 10px; }
+  .rich :global(li) { position: relative; padding-inline-start: 26px; color: var(--navy-900); }
+  .rich :global(li)::before {
+    content: ''; position: absolute; inset-inline-start: 4px; top: 0.6em; width: 9px; height: 9px; border-radius: 2px;
+    background: var(--slate-500); transform: rotate(45deg);
+  }
+  .is-placeholder { background: var(--placeholder-bg); outline: 1px dashed #c9a227; outline-offset: 6px; border-radius: 4px; }
+</style>

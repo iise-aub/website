@@ -1,0 +1,21 @@
+---
+import Base from '../layouts/Base.astro';
+import { t } from '../lib/i18n';
+import { loadSettings } from '../lib/db';
+
+const lang = Astro.url.pathname.startsWith('/ar') ? 'ar' : 'en';
+const settings = await loadSettings();
+Astro.response.status = 404;
+---
+<Base lang={lang} title={t(lang, 'notFoundTitle')} settings={settings}>
+  <section class="wrap not-found">
+    <p class="code" aria-hidden="true">404</p>
+    <h1>{t(lang, 'notFoundTitle')}</h1>
+    <p>{t(lang, 'notFoundText')}</p>
+    <a class="btn btn-primary" href={`/${lang}/`}>{t(lang, 'backHome')}</a>
+  </section>
+</Base>
+<style>
+  .not-found { padding-block: 72px 24px; max-width: 640px; }
+  .code { font-size: 4rem; font-weight: 700; color: var(--accent-bright); margin: 0; line-height: 1; font-family: var(--font-latin); }
+</style>

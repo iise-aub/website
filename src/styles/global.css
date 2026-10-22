@@ -1,0 +1,149 @@
+/* Design tokens. Colours are measured from the IISE logo (Oct 22, 2026):
+   navy #1a3668, slate #334d77, mid-blue #4c6589, steel #68809c, grey #717372, on white.
+   Lighter and darker steps are tints/shades of those. Change colours here and the whole site follows. */
+:root {
+  --navy-950: #0f2147;     /* shade of logo navy: deepest surfaces */
+  --navy-900: #142c58;     /* headings, body text */
+  --navy-800: #1a3668;     /* LOGO NAVY: buttons, drawn road */
+  --navy-700: #26427a;
+  --slate-600: #334d77;    /* LOGO SLATE */
+  --slate-500: #4c6589;    /* LOGO MID-BLUE */
+  --steel-400: #68809c;    /* LOGO STEEL (decorative/large only: 3.9:1 on white) */
+  --steel-300: #a4b3c6;
+  --steel-200: #cdd6e2;    /* borders */
+  --steel-100: #e8edf3;    /* tinted panels */
+  --steel-50:  #f5f7fa;    /* alternate section background */
+  --grey-600:  #717372;    /* LOGO GREY: secondary text (4.7:1 on white) */
+  --grey-500:  #717372;
+  --white: #ffffff;
+
+  --ink: var(--navy-900);
+  --ink-soft: var(--grey-600);
+  --paper: var(--white);
+  --surface: var(--white);
+  --line: var(--steel-200);
+  --accent: var(--navy-800);
+  --accent-strong: var(--navy-950);
+  --accent-wash: var(--steel-100);
+  --placeholder-bg: #fff7dc;
+  --placeholder-ink: #6b4e00;
+  --focus: #2563eb;
+
+  --font-latin: 'Source Sans 3 Variable', 'Source Sans 3', 'Myriad Pro', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display-latin: var(--font-latin);
+  --font-arabic: 'Noto Sans Arabic Variable', 'Noto Sans Arabic', system-ui, 'Segoe UI', Tahoma, sans-serif;
+  --font: var(--font-latin);
+  --font-display: var(--font-display-latin);
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+
+  --radius: 18px;
+  --radius-sm: 10px;
+  --gutter: 16px;
+  --max: 1160px;
+  --shadow-sm: 0 1px 2px rgb(18 38 79 / 0.06);
+  --shadow: 0 1px 2px rgb(18 38 79 / 0.05), 0 12px 32px -12px rgb(18 38 79 / 0.18);
+  --shadow-lg: 0 2px 4px rgb(11 26 56 / 0.08), 0 30px 60px -20px rgb(11 26 56 / 0.35);
+  color-scheme: light;
+}
+:lang(ar) { --font: var(--font-arabic); --font-display: var(--font-arabic); }
+
+*, *::before, *::after { box-sizing: border-box; }
+/* Elements marked hidden stay hidden, even when a class gives them a display value. */
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-padding-top: 88px; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 1.125rem;
+  line-height: 1.6;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+}
+body:lang(ar) { line-height: 1.85; }
+img { max-width: 100%; height: auto; display: block; }
+h1, h2, h3 { font-family: var(--font-display); color: var(--navy-800); line-height: 1.04; margin: 0 0 0.45em; letter-spacing: -0.022em; text-wrap: balance; }
+:lang(ar) :is(h1, h2, h3) { letter-spacing: 0; line-height: 1.3; }
+h1 { font-size: clamp(2.7rem, 9vw, 4.9rem); font-weight: 800; }
+h2 { font-size: clamp(2.1rem, 6vw, 3.4rem); font-weight: 800; }
+h3 { font-size: clamp(1.5rem, 3.6vw, 2rem); font-weight: 700; }
+p { margin: 0 0 1em; text-wrap: pretty; }
+a { color: var(--navy-800); text-underline-offset: 0.2em; text-decoration-thickness: 1px; }
+a:hover { color: var(--navy-950); }
+
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 6px; }
+
+.wrap { width: 100%; max-width: var(--max); margin-inline: auto; padding-inline: var(--gutter); }
+@media (min-width: 720px) { :root { --gutter: 32px; } }
+
+/* Small letterspaced label, like "INSTITUTE OF" in the logo. */
+.eyebrow {
+  font-family: var(--font-latin); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--grey-600); margin: 0 0 14px;
+}
+:lang(ar) .eyebrow { font-family: var(--font-arabic); letter-spacing: 0; text-transform: none; font-size: 0.95rem; }
+
+/* Pill tag, e.g. "• 1948". */
+.pill {
+  display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px 4px 10px; border-radius: 999px;
+  border: 1px solid var(--steel-200); background: var(--white); color: var(--navy-800);
+  font-family: var(--font-latin); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+}
+.pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+:lang(ar) .pill { font-family: var(--font-arabic); letter-spacing: 0; text-transform: none; font-size: 0.9rem; }
+
+.visually-hidden {
+  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.skip-link {
+  position: absolute; inset-inline-start: 8px; top: -60px; z-index: 100;
+  background: var(--navy-900); color: #fff; padding: 10px 14px; border-radius: var(--radius-sm);
+}
+.skip-link:focus { top: 8px; color: #fff; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.55em;
+  min-height: 48px; padding: 0.7em 1.4em; border-radius: 999px;
+  font-family: var(--font-latin); font-size: 0.9rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+  text-decoration: none; cursor: pointer; border: 1.5px solid transparent;
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease, transform 160ms var(--ease-out);
+}
+:lang(ar) .btn { font-family: var(--font-arabic); letter-spacing: 0; text-transform: none; font-size: 1rem; }
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--navy-800); color: #fff; }
+.btn-primary:hover { background: var(--navy-950); color: #fff; }
+.btn-ghost { background: var(--white); color: var(--navy-900); border-color: var(--steel-200); }
+.btn-ghost:hover { border-color: var(--navy-800); color: var(--navy-900); }
+.btn-light { background: #fff; color: var(--navy-900); }
+.btn-light:hover { background: var(--steel-100); color: var(--navy-900); }
+.btn-outline-light { background: transparent; color: #fff; border-color: rgb(255 255 255 / 0.4); }
+.btn-outline-light:hover { border-color: #fff; color: #fff; }
+.btn .arrow { transition: transform 200ms var(--ease-out); }
+@media (hover: hover) and (pointer: fine) { .btn:hover .arrow { transform: translateX(3px); } :dir(rtl) .btn:hover .arrow, [dir='rtl'] .btn:hover .arrow { transform: translateX(-3px); } }
+
+/* Placeholder marking: anything the team still has to provide. */
+.ph-badge {
+  display: inline-block; font-family: var(--font-latin); font-size: 0.72rem; font-weight: 600; line-height: 1.4; letter-spacing: 0.02em;
+  padding: 0.15em 0.6em; border-radius: 999px; vertical-align: middle; text-transform: none;
+  background: var(--placeholder-bg); color: var(--placeholder-ink); border: 1px dashed #c9a227;
+}
+:lang(ar) .ph-badge { font-family: var(--font-arabic); font-size: 0.8rem; }
+.ph-text { background: var(--placeholder-bg); outline: 1px dashed #c9a227; outline-offset: 2px; }
+
+/* Faint meridian linework (the globe in the logo), used as a background texture. */
+.meridians {
+  position: absolute; pointer-events: none; color: var(--steel-200);
+}
+
+[lang='en'][dir='ltr'] { unicode-bidi: isolate; }
+/* An English fallback block inside an Arabic page still lines up with the Arabic around it. */
+[dir='rtl'] [lang='en'][dir='ltr']:is(p, div, h1, h2, h3, li) { text-align: right; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}

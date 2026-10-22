@@ -1,0 +1,144 @@
+---
+import Admin from '../../../layouts/Admin.astro';
+import BiField from '../../../components/admin/BiField.astro';
+import PhotoField from '../../../components/admin/PhotoField.astro';
+import { db } from '../../../lib/db';
+import { checked, field, getMedia, isUrlOrEmpty, logChange, now, savePhotoFromForm, uniqueSlug } from '../../../lib/admin';
+import { beirutLocalToUtc, utcToBeirutLocal } from '../../../lib/time';
+
+type Ev = Record<string, string | number | null> & { id: number; slug: string; cover_media_id: number | null };
+const d = db();
+const isNew = Astro.params.id === 'new';
+const id = isNew ? null : Number(Astro.params.id);
+if (!isNew && !Number.isInteger(id)) return Astro.redirect('/admin/events');
+
+let ev: Ev | null = isNew ? null : await d.prepare('SELECT * FROM events WHERE id = ?').bind(id).first<Ev>();
+if (!isNew && !ev) return Astro.redirect('/admin/events?saved=' + encodeURIComponent('That event no longer exists'));
+
+const GOLD = ['', 'Chapter meeting', 'Professional development', 'Community service', 'Social', 'Outreach / recruitment', 'Competition', 'Other'];
+const errors: Record<string, string> = {};
+let values: Record<string, string> = {};
+let postedCover: number | null | undefined; // keeps a just-uploaded photo if the save fails
+const by = Astro.locals.user!.email;
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+
+  if (form.get('_action') === 'delete' && ev) {
+    await d.batch([d.prepare('DELETE FROM events WHERE id = ?').bind(ev.id), logChange(by, 'events', ev.id, 'delete', String(ev.title_en))]);
+    return Astro.redirect('/admin/events?saved=' + encodeURIComponent('Event deleted'), 303);
+  }
+
+  const names = ['title_en', 'title_ar', 'summary_en', 'summary_ar', 'body_en', 'body_ar', 'location_en', 'location_ar', 'starts', 'ends', 'registration_url', 'gold_category', 'status'];
+  values = Object.fromEntries(names.map((n) => [n, field(form, n)]));
+  postedCover = await savePhotoFromForm(form, 'cover');
+  if (!values.title_en) errors.title = 'Give the event an English title.';
+  if (!values.starts) errors.starts = 'When does it start?';
+  if (!values.ends) errors.ends = 'When does it end?';
+  if (values.starts && values.ends && values.ends <= values.starts) errors.ends = 'The end must be after the start.';
+  if (!isUrlOrEmpty(values.registration_url)) errors.registration_url = 'This must be a full link starting with https://';
+  if (!['draft', 'published'].includes(values.status)) values.status = 'draft';
+
+  if (Object.keys(errors).length === 0) {
+    const cover = postedCover;
+    const row = [
+      values.title_en, values.title_ar, values.summary_en, values.summary_ar, values.body_en, values.body_ar,
+      beirutLocalToUtc(values.starts), beirutLocalToUtc(values.ends), values.location_en, values.location_ar,
+      cover, values.registration_url, values.gold_category, checked(form, 'show_on_history_map'), values.status,
+      ev ? (checked(form, 'is_placeholder') && ev.is_placeholder ? 1 : 0) : 0, now(), by,
+    ];
+    if (ev) {
+      await d.batch([
+        d.prepare(`UPDATE events SET title_en=?, title_ar=?, summary_en=?, summary_ar=?, body_en=?, body_ar=?, starts_at=?, ends_at=?,
+          location_en=?, location_ar=?, cover_media_id=?, registration_url=?, gold_category=?, show_on_history_map=?, status=?,
+          is_placeholder=?, updated_at=?, updated_by=? WHERE id=?`).bind(...row, ev.id),
+        logChange(by, 'events', ev.id, 'update', values.title_en),
+      ]);
+      return Astro.redirect(`/admin/events/${ev.id}?saved=` + encodeURIComponent('Event saved'), 303);
+    }
+    const slug = await uniqueSlug('events', values.title_en);
+    const created = await d.prepare(`INSERT INTO events (title_en, title_ar, summary_en, summary_ar, body_en, body_ar, starts_at, ends_at,
+        location_en, location_ar, cover_media_id, registration_url, gold_category, show_on_history_map, status, is_placeholder, updated_at, updated_by, slug)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`).bind(...row, slug).first<{ id: number }>();
+    await logChange(by, 'events', created!.id, 'create', values.title_en).run();
+    return Astro.redirect(`/admin/events/${created!.id}?saved=` + encodeURIComponent('Event created'), 303);
+  }
+}
+
+// Values to show in the form (after a failed save, keep what was typed).
+const v = (n: string, fallback: unknown = '') => (n in values ? values[n] : String(fallback ?? ''));
+const startsLocal = ev ? utcToBeirutLocal(String(ev.starts_at)) : '';
+const endsLocal = ev ? utcToBeirutLocal(String(ev.ends_at)) : '';
+const cover = await getMedia(postedCover !== undefined ? postedCover : ev?.cover_media_id ?? null);
+const status = v('status', ev?.status ?? 'published');
+---
+<Admin title={isNew ? 'New event' : `Edit: ${ev!.title_en}`} active="events">
+  <p><a href="/admin/events">← All events</a></p>
+  <div class="page-head">
+    <div>
+      <h1>{isNew ? 'New event' : 'Edit event'}</h1>
+      {ev && <p>Web address: <a href={`/en/events/${ev.slug}`} target="_blank" rel="noopener">/events/{ev.slug}</a></p>}
+    </div>
+  </div>
+  {Object.keys(errors).length > 0 && (
+    <div class="err-box" role="alert">Please fix these:<ul>{Object.values(errors).map((e) => <li>{e}</li>)}</ul></div>
+  )}
+  {ev?.is_placeholder ? <p class="err-box" style="background:var(--placeholder-bg);color:var(--placeholder-ink);border-color:#c9a227">This is a <strong>sample event</strong> created for testing. Replace its content, or delete it.</p> : null}
+
+  <form method="post" data-guard>
+    <section class="card form-grid">
+      <h2>What</h2>
+      <BiField name="title" label="Title" en={v('title_en', ev?.title_en)} ar={v('title_ar', ev?.title_ar)} required error={errors.title} />
+      <BiField name="summary" label="Short summary" hint="One or two sentences. Shown in lists and the homepage banner." long en={v('summary_en', ev?.summary_en)} ar={v('summary_ar', ev?.summary_ar)} />
+      <BiField name="body" label="Full description (optional)" long tall en={v('body_en', ev?.body_en)} ar={v('body_ar', ev?.body_ar)} />
+      <PhotoField name="cover" label="Cover photo (optional)" media={cover} hint="A landscape photo works best." />
+    </section>
+
+    <section class="card form-grid">
+      <h2>When and where</h2>
+      <p class="hint">Enter times in <strong>Beirut time</strong>. Check-in (Phase 2) opens 15 minutes before the start.</p>
+      <div class="pair">
+        <div class="f">
+          <label for="f-starts">Starts *</label>
+          <input id="f-starts" type="datetime-local" name="starts" value={v('starts', startsLocal)} required aria-invalid={errors.starts ? 'true' : undefined} />
+          {errors.starts && <p class="err">{errors.starts}</p>}
+        </div>
+        <div class="f">
+          <label for="f-ends">Ends *</label>
+          <input id="f-ends" type="datetime-local" name="ends" value={v('ends', endsLocal)} required aria-invalid={errors.ends ? 'true' : undefined} />
+          {errors.ends && <p class="err">{errors.ends}</p>}
+        </div>
+      </div>
+      <BiField name="location" label="Location" hint="e.g. Bechtel Engineering Building, room 410" en={v('location_en', ev?.location_en)} ar={v('location_ar', ev?.location_ar)} />
+      <div class="f">
+        <label for="f-reg">Sign-up link (optional)</label>
+        <input id="f-reg" type="url" name="registration_url" placeholder="https://" value={v('registration_url', ev?.registration_url)} aria-invalid={errors.registration_url ? 'true' : undefined} />
+        {errors.registration_url && <p class="err">{errors.registration_url}</p>}
+      </div>
+    </section>
+
+    <section class="card form-grid">
+      <h2>Visibility and records</h2>
+      <fieldset class="f" style="border:0;padding:0;margin:0">
+        <legend class="f-label">Status</legend>
+        <label class="check"><input type="radio" name="status" value="published" checked={status === 'published'} /> Published: visible on the site</label>
+        <label class="check"><input type="radio" name="status" value="draft" checked={status === 'draft'} /> Draft: hidden until you publish it</label>
+      </fieldset>
+      <label class="check"><input type="checkbox" name="show_on_history_map" checked={Boolean(ev?.show_on_history_map)} /> Show on the history map (after it happens)</label>
+      {ev?.is_placeholder ? <label class="check"><input type="checkbox" name="is_placeholder" checked /> Still a sample (untick once the content is real)</label> : null}
+      <div class="f">
+        <label for="f-gold">Gold Award report category (internal, never shown publicly)</label>
+        <select id="f-gold" name="gold_category">
+          {GOLD.map((g) => <option value={g} selected={v('gold_category', ev?.gold_category) === g}>{g || '—'}</option>)}
+        </select>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">{isNew ? 'Create event' : 'Save changes'}</button>
+      <a class="btn btn-ghost" href="/admin/events">Cancel</a>
+      <span class="spacer"></span>
+      {ev && <button class="btn btn-danger" type="submit" name="_action" value="delete" formnovalidate data-confirm={`Delete “${ev.title_en}”? This can’t be undone.`}>Delete</button>}
+    </div>
+  </form>
+</Admin>

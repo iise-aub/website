@@ -1,0 +1,113 @@
+---
+// The globe from the IISE logo, redrawn as a vector: 4 columns (centre line + one meridian ellipse)
+// by 4 rows, tiles in the logo's four blues, white gutters. Geometry and colours measured from the logo.
+// Motion: tiles cascade in once; a thin orbit with three nodes circles the globe ("systems").
+// Reduced motion: everything static. Purely decorative (aria-hidden).
+interface Props { class?: string }
+const { class: cls } = Astro.props;
+
+const R = 200;
+const GUTTER = 11;
+const ELLIPSE = { rx: 112, ry: 214 };
+const rows = [[-R, -114], [-114, -4], [-4, 97], [97, R]] as const;
+const C = { steel: '#68809c', mid: '#4c6589', slate: '#334d77', navy: '#1a3668' };
+// Colour of each tile, row by row: outer-left, inner-left, inner-right, outer-right (as in the logo).
+const palette = [
+  [C.steel, C.mid, C.slate, C.navy],
+  [C.steel, C.mid, C.slate, C.navy],
+  [C.navy, C.slate, C.mid, C.steel],
+  [C.navy, C.slate, C.mid, C.steel],
+];
+const cols = [
+  { x: -R, clip: 'out' }, { x: -R, clip: 'in' }, { x: 0, clip: 'in' }, { x: 0, clip: 'out' },
+] as const;
+const tiles = rows.flatMap(([y1, y2], r) =>
+  cols.map((c, ci) => ({ x: c.x, y: y1, w: R, h: y2 - y1, clip: c.clip, fill: palette[r][ci], d: r + ci })),
+);
+const parallels = [-114, -4, 97].map((y) => ({ y, half: Math.sqrt(R * R - y * y) }));
+const orbit = { rx: 300, ry: 72, tilt: -16 };
+const orbitPath = `M ${-orbit.rx} 0 A ${orbit.rx} ${orbit.ry} 0 1 0 ${orbit.rx} 0 A ${orbit.rx} ${orbit.ry} 0 1 0 ${-orbit.rx} 0`;
+const nodes = [0, 6, 12];
+const uid = 'lg';
+---
+<svg class:list={['logo-globe', cls]} viewBox="-330 -250 660 500" aria-hidden="true" focusable="false" data-logo-globe>
+  <defs>
+    <clipPath id={`${uid}-circle`}><circle r={R} /></clipPath>
+    <clipPath id={`${uid}-in`}><ellipse rx={ELLIPSE.rx} ry={ELLIPSE.ry} /></clipPath>
+    <clipPath id={`${uid}-out`}>
+      <path clip-rule="evenodd" d={`M ${-R} ${-R} H ${R} V ${R} H ${-R} Z M 0 ${-ELLIPSE.ry} A ${ELLIPSE.rx} ${ELLIPSE.ry} 0 1 0 0 ${ELLIPSE.ry} A ${ELLIPSE.rx} ${ELLIPSE.ry} 0 1 0 0 ${-ELLIPSE.ry} Z`} />
+    </clipPath>
+    <clipPath id={`${uid}-back`}><rect x="-400" y="-200" width="800" height="200" /></clipPath>
+    <clipPath id={`${uid}-front`}><rect x="-400" y="0" width="800" height="200" /></clipPath>
+    <radialGradient id={`${uid}-shade`} cx="35%" cy="30%" r="75%">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.16" />
+      <stop offset="0.6" stop-color="#fff" stop-opacity="0" />
+      <stop offset="1" stop-color="#0f2147" stop-opacity="0.18" />
+    </radialGradient>
+  </defs>
+
+  <!-- Back half of the orbit (behind the globe) -->
+  <g transform={`rotate(${orbit.tilt})`}>
+    <g clip-path={`url(#${uid}-back)`}>
+      <ellipse class="orbit-ring" rx={orbit.rx} ry={orbit.ry} />
+      {nodes.map((offset) => (
+        <circle class="orbit-node" r="7">
+          <animateMotion dur="18s" repeatCount="indefinite" begin={`-${offset}s`} path={orbitPath} />
+        </circle>
+      ))}
+    </g>
+  </g>
+
+  <!-- The globe -->
+  <g class="globe-body">
+    <g clip-path={`url(#${uid}-circle)`}>
+      {(['in', 'out'] as const).map((side) => (
+        <g clip-path={`url(#${uid}-${side})`}>
+          {tiles.filter((t) => t.clip === side).map((t) => (
+            <rect class="tile" x={t.x} y={t.y} width={t.w} height={t.h} fill={t.fill} style={`--d:${t.d}`} />
+          ))}
+        </g>
+      ))}
+      <circle r={R} fill={`url(#${uid}-shade)`} />
+    </g>
+    <g class="gutters" fill="none" stroke="#fff" stroke-width={GUTTER}>
+      <line x1="0" y1={-R - 2} x2="0" y2={R + 2} />
+      <ellipse rx={ELLIPSE.rx} ry={ELLIPSE.ry} clip-path={`url(#${uid}-circle)`} />
+      {parallels.map((p) => <line x1={-p.half - 2} y1={p.y} x2={p.half + 2} y2={p.y} />)}
+    </g>
+  </g>
+
+  <!-- Front half of the orbit (in front of the globe) -->
+  <g transform={`rotate(${orbit.tilt})`}>
+    <g clip-path={`url(#${uid}-front)`}>
+      <ellipse class="orbit-ring" rx={orbit.rx} ry={orbit.ry} />
+      {nodes.map((offset) => (
+        <circle class="orbit-node" r="7">
+          <animateMotion dur="18s" repeatCount="indefinite" begin={`-${offset}s`} path={orbitPath} />
+        </circle>
+      ))}
+    </g>
+  </g>
+</svg>
+
+<script>
+  // Respect "reduce motion": freeze the orbit (SMIL animations ignore CSS).
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const apply = () => document.querySelectorAll<SVGSVGElement>('[data-logo-globe]').forEach((svg) =>
+    reduce.matches ? svg.pauseAnimations() : svg.unpauseAnimations());
+  reduce.addEventListener('change', apply);
+  apply();
+</script>
+
+<style>
+  .logo-globe { display: block; width: 100%; height: auto; overflow: visible; }
+  .orbit-ring { fill: none; stroke: var(--steel-300); stroke-width: 1.5; }
+  .orbit-node { fill: var(--navy-800); stroke: #fff; stroke-width: 3; }
+  .tile { transform-box: fill-box; transform-origin: center; }
+  @media (prefers-reduced-motion: no-preference) {
+    .tile { animation: tile-in 700ms var(--ease-out) both; animation-delay: calc(var(--d) * 70ms + 120ms); }
+    .globe-body { animation: float 7s ease-in-out 1s infinite; }
+  }
+  @keyframes tile-in { from { opacity: 0; transform: scale(0.82); } to { opacity: 1; transform: none; } }
+  @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+</style>

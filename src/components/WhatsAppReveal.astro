@@ -1,0 +1,82 @@
+---
+// The WhatsApp link is never in the page. It is fetched only after a Cloudflare Turnstile check
+// ("I'm not a robot"), which stops bots that scan sites for group links. The Turnstile script is
+// loaded only when the visitor asks for the link, so it costs nothing on page load.
+import { env } from 'cloudflare:workers';
+import { t, type Lang } from '../lib/i18n';
+interface Props { lang: Lang; available: boolean }
+const { lang, available } = Astro.props;
+---
+{available ? (
+  <div class="wa" data-wa data-sitekey={String(env.TURNSTILE_SITE_KEY)} data-lang={lang}>
+    <button type="button" class="btn btn-primary wa-start" data-wa-start>
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.6-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg>
+      {t(lang, 'waShow')}
+    </button>
+    <div class="wa-check" data-wa-widget hidden></div>
+    <p class="wa-status" data-wa-status aria-live="polite"></p>
+    <a class="btn btn-primary wa-open" data-wa-link hidden target="_blank" rel="noopener">{t(lang, 'waOpen')} <span class="visually-hidden">{t(lang, 'newTab')}</span></a>
+  </div>
+) : (
+  <span class="ph-badge">{t(lang, 'linkComing')}</span>
+)}
+
+<script>
+  type TS = { render: (el: HTMLElement, o: Record<string, unknown>) => string };
+  const loadTurnstile = () => new Promise<TS>((resolve, reject) => {
+    const w = window as unknown as { turnstile?: TS };
+    if (w.turnstile) return resolve(w.turnstile);
+    const s = document.createElement('script');
+    s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+    s.async = true;
+    s.onload = () => (w.turnstile ? resolve(w.turnstile) : reject(new Error('turnstile')));
+    s.onerror = () => reject(new Error('turnstile'));
+    document.head.appendChild(s);
+  });
+
+  document.querySelectorAll<HTMLElement>('[data-wa]').forEach((root) => {
+    const start = root.querySelector<HTMLButtonElement>('[data-wa-start]')!;
+    const widget = root.querySelector<HTMLElement>('[data-wa-widget]')!;
+    const status = root.querySelector<HTMLElement>('[data-wa-status]')!;
+    const link = root.querySelector<HTMLAnchorElement>('[data-wa-link]')!;
+    const ar = root.dataset.lang === 'ar';
+    const msg = {
+      checking: ar ? 'نتحقّق من أنك لست روبوتًا…' : 'Checking you’re not a robot…',
+      failed: ar ? 'تعذّر التحقّق. أعد المحاولة.' : 'The check didn’t work. Please try again.',
+      ready: ar ? 'تمّ. يوافق أحد المشرفين على طلب انضمامك.' : 'Done. An admin will approve your request to join.',
+    };
+    start.addEventListener('click', async () => {
+      start.disabled = true;
+      status.textContent = msg.checking;
+      try {
+        const ts = await loadTurnstile();
+        widget.hidden = false;
+        ts.render(widget, {
+          sitekey: root.dataset.sitekey,
+          language: ar ? 'ar' : 'en',
+          callback: async (token: string) => {
+            const res = await fetch('/api/whatsapp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
+            const data = (await res.json().catch(() => ({}))) as { url?: string };
+            if (!res.ok || !data.url) { status.textContent = msg.failed; start.disabled = false; return; }
+            link.href = data.url;
+            link.hidden = false;
+            start.hidden = true;
+            widget.hidden = true;
+            status.textContent = msg.ready;
+            link.focus();
+          },
+          'error-callback': () => { status.textContent = msg.failed; start.disabled = false; },
+        });
+      } catch {
+        status.textContent = msg.failed;
+        start.disabled = false;
+      }
+    });
+  });
+</script>
+<style>
+  .wa { display: grid; gap: 10px; justify-items: start; }
+  .wa-status { margin: 0; font-size: 0.95rem; color: var(--ink-soft); min-height: 1.4em; }
+  .wa-start, .wa-open { background: #0f7a40; }
+  .wa-start:hover, .wa-open:hover { background: #0b5e31; }
+</style>

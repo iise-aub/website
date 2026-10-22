@@ -1,0 +1,45 @@
+---
+// Weekly and term leaderboards. The visitor's own row is highlighted.
+import { t, type Lang } from '../lib/i18n';
+import type { BoardRow, TermRow } from '../lib/game-db';
+interface Props { lang: Lang; week: BoardRow[]; term: TermRow[]; me?: string | null }
+const { lang, week, term, me } = Astro.props;
+const fmt = (ms: number) => { const s = Math.round(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+const medal = (r: number) => (r === 1 ? '🥇' : r === 2 ? '🥈' : r === 3 ? '🥉' : String(r));
+---
+<div class="boards">
+  {[{ id: 'week', title: t(lang, 'gThisWeek'), rows: week }, { id: 'term', title: t(lang, 'gThisTerm'), rows: term }].map((b) => (
+    <section class="board-card" aria-labelledby={`lb-${b.id}`}>
+      <h2 id={`lb-${b.id}`}>{b.title}</h2>
+      {b.rows.length === 0 ? <p class="none">{t(lang, 'gNoScores')}</p> : (
+        <ol class="rows">
+          {b.rows.map((r) => (
+            <li class:list={['row', r.player_id === me && 'is-me', r.rank <= 3 && 'top']}>
+              <span class="rank" aria-label={`#${r.rank}`}>{medal(r.rank)}</span>
+              <span class="name" dir="auto">{r.nickname}{r.player_id === me && <span class="you"> ({t(lang, 'gYou')})</span>}</span>
+              <span class="pts">{'total' in r ? (r as TermRow).total : (r as BoardRow).score} <small>{t(lang, 'gPts')}</small></span>
+              <span class="extra">{'total' in r ? `${(r as TermRow).weeks} ${t(lang, (r as TermRow).weeks === 1 ? 'gWeek1' : 'gWeeks')}` : fmt((r as BoardRow).duration_ms)}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+  ))}
+</div>
+<style>
+  .boards { display: grid; gap: 14px; }
+  .board-card { background: var(--white); border: 1px solid var(--steel-200); border-radius: var(--radius); padding: 18px; }
+  .board-card h2 { font-size: 1.3rem; margin-bottom: 10px; }
+  .none { color: var(--grey-600); margin: 0; }
+  .rows { list-style: none; margin: 0; padding: 0; }
+  .row { display: grid; grid-template-columns: 34px 1fr auto auto; gap: 10px; align-items: center; padding: 9px 8px; border-radius: 10px; font-variant-numeric: tabular-nums; }
+  .row + .row { border-top: 1px solid var(--steel-100); }
+  .rank { text-align: center; font-weight: 700; color: var(--grey-600); }
+  .top .rank { font-size: 1.15rem; }
+  .name { font-weight: 600; color: var(--navy-900); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .you { color: var(--slate-600); font-weight: 400; }
+  .pts { font-weight: 700; color: var(--navy-800); }
+  .pts small { font-weight: 400; color: var(--grey-600); }
+  .extra { color: var(--grey-600); font-size: 0.88rem; min-width: 52px; text-align: end; }
+  .is-me { background: var(--steel-100); border-top-color: transparent !important; }
+</style>

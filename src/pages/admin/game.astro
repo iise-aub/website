@@ -1,0 +1,117 @@
+---
+// Weekly puzzle settings and moderation: switch it on/off, set the term start, hide scores or nicknames.
+import Admin from '../../layouts/Admin.astro';
+import { db } from '../../lib/db';
+import { field, logChange, now } from '../../lib/admin';
+import { metres, previousWeekId, weekId } from '../../lib/game';
+
+const d = db();
+const by = Astro.locals.user!.email;
+const week = weekId();
+let error = '';
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const action = field(form, '_action');
+  if (action === 'settings') {
+    const enabled = form.get('game_enabled') === 'on' ? '1' : '0';
+    const term = field(form, 'game_term_start');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(term)) error = 'Enter the term start as YYYY-MM-DD, e.g. 2026-09-01.';
+    else {
+      await d.batch([
+        d.prepare('UPDATE settings SET value = ?, updated_at = ?, updated_by = ? WHERE key = ?').bind(enabled, now(), by, 'game_enabled'),
+        d.prepare('UPDATE settings SET value = ?, updated_at = ?, updated_by = ? WHERE key = ?').bind(term, now(), by, 'game_term_start'),
+        logChange(by, 'settings', 'game', 'update', `Weekly puzzle ${enabled === '1' ? 'on' : 'off'}, term from ${term}`),
+      ]);
+      return Astro.redirect('/admin/game?saved=' + encodeURIComponent('Puzzle settings saved'), 303);
+    }
+  }
+  if (action === 'score' || action === 'player') {
+    const id = field(form, 'id');
+    const table = action === 'score' ? 'game_scores' : 'game_players';
+    await d.batch([
+      d.prepare(`UPDATE ${table} SET hidden = 1 - hidden WHERE id = ?`).bind(action === 'score' ? Number(id) : id),
+      logChange(by, table, id, 'update', action === 'score' ? 'Hid/showed a puzzle score' : 'Hid/showed a puzzle nickname'),
+    ]);
+    return Astro.redirect('/admin/game?saved=' + encodeURIComponent('Leaderboard updated'), 303);
+  }
+}
+
+const [settingsRes, scoresRes, hiddenPlayersRes, statsRes] = await d.batch([
+  d.prepare("SELECT key, value FROM settings WHERE key IN ('game_enabled', 'game_term_start')"),
+  d.prepare(`SELECT s.id, s.week, s.score, s.result, s.duration_ms, s.hidden, p.id AS player_id, p.nickname, p.hidden AS player_hidden
+    FROM game_scores s JOIN game_players p ON p.id = s.player_id WHERE s.week IN (?, ?) ORDER BY s.week DESC, s.score DESC, s.duration_ms`).bind(week, previousWeekId()),
+  d.prepare('SELECT id, nickname FROM game_players WHERE hidden = 1 ORDER BY nickname'),
+  d.prepare('SELECT COUNT(*) AS players, (SELECT COUNT(*) FROM game_scores) AS plays FROM game_players'),
+]);
+const s = Object.fromEntries((settingsRes.results as { key: string; value: string }[]).map((r) => [r.key, r.value]));
+type Sc = { id: number; week: string; score: number; result: number; duration_ms: number; hidden: number; player_id: string; nickname: string; player_hidden: number };
+const scores = scoresRes.results as Sc[];
+const hiddenPlayers = hiddenPlayersRes.results as { id: string; nickname: string }[];
+const stats = statsRes.results[0] as { players: number; plays: number };
+const fmt = (ms: number) => { const x = Math.round(ms / 1000); return `${Math.floor(x / 60)}:${String(x % 60).padStart(2, '0')}`; };
+const groups = [{ title: `This week (${week})`, rows: scores.filter((r) => r.week === week) }, { title: `Last week (${previousWeekId()})`, rows: scores.filter((r) => r.week !== week) }];
+---
+<Admin title="Weekly puzzle" active="game">
+  <div class="page-head">
+    <div>
+      <h1>Weekly puzzle</h1>
+      <p>A new Coffee Run map is generated automatically every Monday (Beirut time); nothing to prepare. {stats.players} players so far, {stats.plays} plays.</p>
+    </div>
+    <a class="btn btn-ghost" href="/en/game" target="_blank" rel="noopener">Open the puzzle ↗</a>
+  </div>
+  {error && <div class="err-box" role="alert">{error}</div>}
+
+  <form method="post" class="card form-grid">
+    <input type="hidden" name="_action" value="settings" />
+    <h2>Settings</h2>
+    <label class="check"><input type="checkbox" name="game_enabled" checked={s.game_enabled === '1'} /> The weekly puzzle is on (untick to hide it everywhere on the site)</label>
+    <div class="f" style="max-width:280px">
+      <label for="f-term">Term leaderboard starts on</label>
+      <input id="f-term" type="text" inputmode="numeric" name="game_term_start" placeholder="YYYY-MM-DD" value={s.game_term_start} />
+      <p class="hint">Set this at the start of each term to reset the “This term” leaderboard.</p>
+    </div>
+    <div><button class="btn btn-primary" type="submit">Save</button></div>
+  </form>
+
+  {groups.map((g) => (
+    <section class="card">
+      <h2>{g.title}</h2>
+      <p class="hint">Hide a score if it looks wrong, or hide a nickname if it is rude (that player disappears from every leaderboard).</p>
+      {g.rows.length === 0 ? <p class="empty">No scores.</p> : (
+        <ul class="list">
+          {g.rows.map((r) => (
+            <li>
+              <div class="list-main">
+                <span class="list-title">{r.nickname}</span>
+                <span class="list-meta">{r.score} pts · {metres(r.result)} m · {fmt(r.duration_ms)}</span>
+              </div>
+              {r.hidden ? <span class="badge badge-off">Score hidden</span> : null}
+              {r.player_hidden ? <span class="badge badge-off">Nickname hidden</span> : null}
+              <form method="post" class="list-actions">
+                <input type="hidden" name="id" value={r.id} />
+                <button class="icon-btn" name="_action" value="score">{r.hidden ? 'Show score' : 'Hide score'}</button>
+              </form>
+              <form method="post" class="list-actions">
+                <input type="hidden" name="id" value={r.player_id} />
+                <button class="icon-btn" name="_action" value="player" data-confirm={r.player_hidden ? undefined : `Hide “${r.nickname}” from all leaderboards?`}>{r.player_hidden ? 'Show nickname' : 'Hide nickname'}</button>
+              </form>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  ))}
+
+  {hiddenPlayers.length > 0 && (
+    <section class="card">
+      <h2>Hidden nicknames</h2>
+      <ul class="list">
+        {hiddenPlayers.map((p) => (
+          <li><span class="list-main">{p.nickname}</span>
+            <form method="post"><input type="hidden" name="id" value={p.id} /><button class="icon-btn" name="_action" value="player">Show again</button></form></li>
+        ))}
+      </ul>
+    </section>
+  )}
+</Admin>

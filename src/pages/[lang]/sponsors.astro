@@ -1,0 +1,5 @@
+---
+// The Sponsors page was replaced by Companies (Oct 22, 2026). Old links keep working.
+const { lang } = Astro.params;
+return Astro.redirect(`/${lang === 'ar' ? 'ar' : 'en'}/companies`, 301);
+---

@@ -1,0 +1,57 @@
+// Cloudflare settings. The same code runs as two Workers that share one database and one photo store:
+//  - "www"   → the public site, https://www.iise-aub.workers.dev   (never serves /admin)
+//  - "admin" → the editing panel, https://admin.iise-aub.workers.dev (whole Worker behind Cloudflare Access)
+// Deploy the public site with `npm run deploy`, the panel with `npm run deploy:admin`.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "www",
+  "main": "@astrojs/cloudflare/entrypoints/server",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "iise-aub-db",
+      // Replaced with the real ID when the chapter's Cloudflare account exists.
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "iise-aub-media" }],
+  "vars": {
+    "APP_ROLE": "public",
+    // Cloudflare's published Turnstile TEST key (always passes). Replaced with the real key at setup.
+    "TURNSTILE_SITE_KEY": "1x00000000000000000000AA",
+    "SITE_URL": "https://www.iise-aub.workers.dev",
+    "ADMIN_URL": "https://admin.iise-aub.workers.dev",
+    // Filled in at setup (Cloudflare Zero Trust → Access application for the admin Worker).
+    "ACCESS_TEAM_DOMAIN": "",
+    "ACCESS_AUD": "",
+    // Emails that become cabinet admins on first sign-in (comma-separated). Set at setup.
+    "BOOTSTRAP_ADMINS": ""
+  },
+  "env": {
+    "admin": {
+      "name": "admin",
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "iise-aub-db",
+          "database_id": "00000000-0000-0000-0000-000000000000",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "iise-aub-media" }],
+      "vars": {
+        "APP_ROLE": "admin",
+        "TURNSTILE_SITE_KEY": "1x00000000000000000000AA",
+        "SITE_URL": "https://www.iise-aub.workers.dev",
+        "ADMIN_URL": "https://admin.iise-aub.workers.dev",
+        "ACCESS_TEAM_DOMAIN": "",
+        "ACCESS_AUD": "",
+        "BOOTSTRAP_ADMINS": ""
+      }
+    }
+  }
+}

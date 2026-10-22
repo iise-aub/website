@@ -1,0 +1,21 @@
+---
+// Globe linework inspired by the IISE logo: meridians and parallels, drawn as thin lines.
+// Purely decorative. Colour comes from `color` on the element (currentColor).
+interface Props { class?: string }
+const { class: cls } = Astro.props;
+const r = 200;
+const meridians = [0.22, 0.48, 0.74];
+const parallels = [-0.75, -0.42, 0, 0.42, 0.75];
+---
+<svg class:list={['meridians', cls]} viewBox="-204 -204 408 408" aria-hidden="true" focusable="false">
+  <g fill="none" stroke="currentColor" stroke-width="1.5">
+    <circle r={r} />
+    <line x1="0" y1={-r} x2="0" y2={r} />
+    {meridians.map((m) => <ellipse rx={r * m} ry={r} />)}
+    {parallels.map((p) => {
+      const y = r * p;
+      const half = Math.sqrt(r * r - y * y);
+      return <line x1={-half} y1={y} x2={half} y2={y} />;
+    })}
+  </g>
+</svg>

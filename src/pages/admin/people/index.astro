@@ -1,0 +1,74 @@
+---
+import Admin from '../../../layouts/Admin.astro';
+import { db } from '../../../lib/db';
+import { logChange } from '../../../lib/admin';
+import { isCabinetAdmin } from '../../../lib/auth';
+
+type P = { id: number; name_en: string; role: string; position_en: string; team: string | null; end_date: string | null; start_date: string | null; photo: number | null; bio_en: string };
+const d = db();
+const by = Astro.locals.user!;
+const today = new Date().toISOString().slice(0, 10);
+const yesterday = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+
+if (Astro.request.method === 'POST' && isCabinetAdmin(by)) {
+  const form = await Astro.request.formData();
+  if (form.get('_action') === 'handover') {
+    const res = await d.prepare(`UPDATE person_roles SET end_date = ? WHERE role = 'cabinet' AND (end_date IS NULL OR end_date = '' OR end_date >= ?)`).bind(yesterday, today).run();
+    await logChange(by.email, 'people', 'cabinet', 'update', `Handover: ended ${res.meta.changes} cabinet terms`).run();
+    return Astro.redirect('/admin/people?saved=' + encodeURIComponent('Cabinet term ended. Add the new cabinet with “+ Add a person”.'), 303);
+  }
+}
+
+const { results } = await d.prepare(`SELECT p.id, p.name_en, p.photo_media_id AS photo, p.bio_en, r.role, r.position_en, r.start_date, r.end_date, t.name_en AS team
+  FROM people p LEFT JOIN person_roles r ON r.id = (SELECT id FROM person_roles WHERE person_id = p.id ORDER BY COALESCE(start_date, '') DESC, id DESC LIMIT 1)
+  LEFT JOIN teams t ON t.id = r.team_id ORDER BY r.role, r.sort_order, p.name_en`).all<P>();
+const current = (x: P) => !x.end_date || x.end_date >= today;
+const cabinet = results.filter((x) => x.role === 'cabinet' && current(x));
+const leads = results.filter((x) => x.role === 'member' && current(x));
+const past = results.filter((x) => !current(x) || !x.role || x.role === 'alumni');
+const groups = [
+  { title: 'Current cabinet', items: cabinet, empty: 'No current cabinet members.' },
+  { title: 'Team leads', items: leads, empty: 'No team leads added yet.' },
+  { title: 'Past members', items: past, empty: 'Nobody here yet. When a term ends, people move here and stay on record.' },
+];
+const missing = (x: P) => [!x.photo && 'photo', !x.bio_en && 'bio'].filter(Boolean).join(' + ');
+---
+<Admin title="Cabinet & people" active="people">
+  <div class="page-head">
+    <div>
+      <h1>Cabinet & people</h1>
+      <p>The cabinet and team leads shown on the Team page. A person can have different roles over the years; past members stay on record.</p>
+    </div>
+    <a class="btn btn-primary" href="/admin/people/new">+ Add a person</a>
+  </div>
+
+  {groups.map((g) => (
+    <section class="card">
+      <h2>{g.title}</h2>
+      {g.items.length === 0 ? <p class="empty">{g.empty}</p> : (
+        <ul class="list">
+          {g.items.map((x) => (
+            <li>
+              <div class="list-main">
+                <a class="list-title" href={`/admin/people/${x.id}`}>{x.name_en}</a>
+                <span class="list-meta">{x.position_en || '—'}{x.team && ` · ${x.team}`}{x.end_date && !current(x) && ` · until ${x.end_date}`}</span>
+              </div>
+              {missing(x) && current(x) && <span class="badge badge-warn">needs {missing(x)}</span>}
+              <a class="icon-btn" href={`/admin/people/${x.id}`}>Edit</a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  ))}
+
+  {isCabinetAdmin(by) && cabinet.length > 0 && (
+    <section class="card">
+      <h2>New cabinet?</h2>
+      <p>At handover, end the current cabinet’s term in one step. They move to “Past members” and disappear from the Team page. Then add the new cabinet.</p>
+      <form method="post">
+        <button class="btn btn-danger" name="_action" value="handover" data-confirm={`End the term of all ${cabinet.length} current cabinet members today?`}>End the current cabinet’s term</button>
+      </form>
+    </section>
+  )}
+</Admin>

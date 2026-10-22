@@ -1,0 +1,102 @@
+---
+// Photo picker. The photo is shrunk in the editor's browser (to WebP at 480/960/1600 px) before
+// uploading, so uploads are fast and storage stays small. Alt text is saved with the form.
+import type { Media } from '../../lib/admin';
+interface Props { name: string; label: string; media: Media | null; hint?: string }
+const { name, label, media, hint } = Astro.props;
+const preview = media ? `/media/${media.r2_key}-480.webp` : '';
+---
+<fieldset class="f photo-field" style="border:0;padding:0;margin:0" data-photo-field>
+  <legend class="f-label">{label}</legend>
+  {hint && <p class="hint">{hint}</p>}
+  <input type="hidden" name={name} value={media?.id ?? ''} data-photo-id />
+  <div class="photo-row">
+    <div class="photo-preview" data-photo-preview>
+      {preview ? <img src={preview} alt="" /> : <span>No photo yet</span>}
+    </div>
+    <div class="photo-controls">
+      <label class="btn btn-ghost photo-pick">
+        <span data-photo-btn-label>{media ? 'Replace photo' : 'Choose a photo'}</span>
+        <input type="file" accept="image/*" class="visually-hidden" data-photo-input />
+      </label>
+      <p class="hint" data-photo-status aria-live="polite">JPG, PNG, HEIC or WebP. Large photos are fine, they are shrunk automatically.</p>
+      {media && <label class="check"><input type="checkbox" name={`${name}_remove`} /> Remove this photo</label>}
+    </div>
+  </div>
+  <div class="pair" data-photo-alt hidden={!media}>
+    <div class="f">
+      <label class="lang-tag" for={`${name}-alt-en`}>Describe the photo (English, for blind visitors) *</label>
+      <input id={`${name}-alt-en`} type="text" name={`${name}_alt_en`} value={media?.alt_en ?? ''} placeholder="e.g. Cabinet members holding the award on stage" />
+    </div>
+    <div class="f">
+      <label class="lang-tag" for={`${name}-alt-ar`}>وصف الصورة · Arabic (optional)</label>
+      <input id={`${name}-alt-ar`} type="text" name={`${name}_alt_ar`} value={media?.alt_ar ?? ''} dir="rtl" lang="ar" />
+    </div>
+  </div>
+</fieldset>
+
+<script>
+  const WIDTHS = [480, 960, 1600];
+
+  async function toWebp(bitmap: ImageBitmap, width: number): Promise<Blob> {
+    const height = Math.round((bitmap.height / bitmap.width) * width);
+    const canvas = document.createElement('canvas');
+    canvas.width = width; canvas.height = height;
+    canvas.getContext('2d')!.drawImage(bitmap, 0, 0, width, height);
+    return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('encode'))), 'image/webp', 0.82));
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-photo-field]').forEach((root) => {
+    const input = root.querySelector<HTMLInputElement>('[data-photo-input]')!;
+    const idField = root.querySelector<HTMLInputElement>('[data-photo-id]')!;
+    const status = root.querySelector<HTMLElement>('[data-photo-status]')!;
+    const preview = root.querySelector<HTMLElement>('[data-photo-preview]')!;
+    const alt = root.querySelector<HTMLElement>('[data-photo-alt]')!;
+    const btnLabel = root.querySelector<HTMLElement>('[data-photo-btn-label]')!;
+
+    input.addEventListener('change', async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      status.textContent = 'Preparing the photo…';
+      try {
+        const bitmap = await createImageBitmap(file);
+        // Always 480 and 960 (the site relies on both); 1600 only when the original is that large.
+        const widths = WIDTHS.filter((w) => w <= 960 || w <= bitmap.width);
+        const body = new FormData();
+        for (const w of widths) body.append('files', await toWebp(bitmap, w), `${w}.webp`);
+        body.append('widths', JSON.stringify(widths));
+        body.append('width', String(bitmap.width));
+        body.append('height', String(bitmap.height));
+        status.textContent = 'Uploading…';
+        const res = await fetch('/api/admin/media', { method: 'POST', body });
+        const data = (await res.json().catch(() => ({}))) as { id?: number; key?: string; error?: string };
+        if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`);
+        idField.value = String(data.id);
+        preview.innerHTML = '';
+        const img = new Image(); img.src = `/media/${data.key}-${widths[0]}.webp`; img.alt = '';
+        preview.appendChild(img);
+        alt.hidden = false;
+        btnLabel.textContent = 'Replace photo';
+        status.textContent = 'Uploaded. Describe the photo below, then save.';
+        root.closest('form')?.dispatchEvent(new Event('input'));
+        alt.querySelector('input')?.focus();
+      } catch (e) {
+        status.textContent = `Sorry, that photo could not be used: ${(e as Error).message}. Try a JPG or PNG.`;
+      } finally {
+        input.value = '';
+      }
+    });
+  });
+</script>
+
+<style>
+  .photo-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+  .photo-preview {
+    width: 160px; aspect-ratio: 4 / 3; border-radius: 10px; overflow: hidden; background: var(--steel-100);
+    display: grid; place-items: center; color: var(--grey-600); font-size: 0.85rem; border: 1px dashed var(--steel-300);
+  }
+  .photo-preview :global(img) { width: 100%; height: 100%; object-fit: cover; }
+  .photo-controls { display: grid; gap: 8px; flex: 1 1 220px; }
+  .photo-pick { cursor: pointer; justify-self: start; }
+  .photo-pick:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
+</style>

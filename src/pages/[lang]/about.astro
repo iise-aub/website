@@ -1,0 +1,26 @@
+---
+import Base from '../../layouts/Base.astro';
+import PageHead from '../../components/PageHead.astro';
+import TextSection from '../../components/TextSection.astro';
+import { isLang, pick, t } from '../../lib/i18n';
+import { loadPage } from '../../lib/db';
+
+const { lang } = Astro.params;
+if (!isLang(lang)) return Astro.rewrite('/404');
+const { settings, text } = await loadPage('about');
+const tx = (block: string) => pick(text[block], 'text', lang);
+const ph = (block: string) => Boolean(text[block]?.needs_content);
+const arrow = lang === 'ar' ? '←' : '→';
+---
+<Base lang={lang} title={tx('title').text} description={tx('intro').text} settings={settings}>
+  <PageHead lang={lang} eyebrow={tx('eyebrow')} title={tx('title')} intro={tx('intro')} />
+  <TextSection lang={lang} title={tx('mission_title')} body={tx('mission_body')} placeholder={ph('mission_body')} tone="tint" id="mission" />
+  <TextSection lang={lang} title={tx('what_title')} body={tx('what_body')} placeholder={ph('what_body')} id="what">
+    <div class="actions">
+      <a class="btn btn-primary" href={`/${lang}/team`}>{t(lang, 'meetTeams')} <span class="arrow" aria-hidden="true">{arrow}</span></a>
+      <a class="btn btn-ghost" href={`/${lang}/history`}>{t(lang, 'seeJourney')}</a>
+    </div>
+  </TextSection>
+  <TextSection lang={lang} title={tx('iise_title')} body={tx('iise_body')} placeholder={ph('iise_body')} tone="navy" id="iise" />
+</Base>
+<style>.actions { display: flex; flex-wrap: wrap; gap: 10px; }</style>

@@ -1,0 +1,33 @@
+---
+import Admin from '../../../layouts/Admin.astro';
+import { db } from '../../../lib/db';
+
+type Tm = { id: number; name_en: string; visible: number; is_placeholder: number; leads: number };
+const { results } = await db().prepare(`SELECT t.id, t.name_en, t.visible, t.is_placeholder,
+  (SELECT COUNT(*) FROM person_roles r WHERE r.team_id = t.id AND r.role = 'member' AND (r.end_date IS NULL OR r.end_date = '')) AS leads
+  FROM teams t ORDER BY t.sort_order, t.name_en`).all<Tm>();
+---
+<Admin title="Teams" active="teams">
+  <div class="page-head">
+    <div>
+      <h1>Teams</h1>
+      <p>The teams on the Team page. Team leads are added under Cabinet & people (role: Team lead).</p>
+    </div>
+    <a class="btn btn-primary" href="/admin/teams/new">+ New team</a>
+  </div>
+  <section class="card">
+    <ul class="list">
+      {results.map((tm) => (
+        <li>
+          <div class="list-main">
+            <a class="list-title" href={`/admin/teams/${tm.id}`}>{tm.name_en}</a>
+            <span class="list-meta">{tm.leads ? `${tm.leads} lead${tm.leads > 1 ? 's' : ''}` : 'no leads added'}</span>
+          </div>
+          {tm.is_placeholder ? <span class="badge badge-warn">needs description</span> : null}
+          {!tm.visible && <span class="badge badge-off">Hidden</span>}
+          <a class="icon-btn" href={`/admin/teams/${tm.id}`}>Edit</a>
+        </li>
+      ))}
+    </ul>
+  </section>
+</Admin>

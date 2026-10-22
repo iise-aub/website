@@ -1,0 +1,66 @@
+---
+import Admin from '../../../layouts/Admin.astro';
+import BiField from '../../../components/admin/BiField.astro';
+import { db } from '../../../lib/db';
+import { checked, field, logChange, now, uniqueSlug } from '../../../lib/admin';
+
+type Tm = Record<string, string | number> & { id: number; name_en: string; visible: number; sort_order: number };
+const d = db();
+const by = Astro.locals.user!.email;
+const isNew = Astro.params.id === 'new';
+const id = isNew ? null : Number(Astro.params.id);
+if (!isNew && !Number.isInteger(id)) return Astro.redirect('/admin/teams');
+const tm = isNew ? null : await d.prepare('SELECT * FROM teams WHERE id = ?').bind(id).first<Tm>();
+if (!isNew && !tm) return Astro.redirect('/admin/teams?saved=' + encodeURIComponent('That team no longer exists'));
+
+const errors: Record<string, string> = {};
+let values: Record<string, string> = {};
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  if (form.get('_action') === 'delete' && tm) {
+    await d.batch([d.prepare('DELETE FROM teams WHERE id = ?').bind(tm.id), logChange(by, 'teams', tm.id, 'delete', tm.name_en)]);
+    return Astro.redirect('/admin/teams?saved=' + encodeURIComponent('Team deleted'), 303);
+  }
+  const names = ['name_en', 'name_ar', 'description_en', 'description_ar', 'how_to_join_en', 'how_to_join_ar', 'sort_order'];
+  values = Object.fromEntries(names.map((n) => [n, field(form, n)]));
+  if (!values.name_en) errors.name = 'Give the team an English name.';
+  if (!values.description_en) errors.description = 'Describe what the team does (one or two sentences).';
+  if (Object.keys(errors).length === 0) {
+    const f = [values.name_en, values.name_ar, values.description_en, values.description_ar, values.how_to_join_en, values.how_to_join_ar,
+      Number(values.sort_order) || 0, checked(form, 'visible'), now(), by];
+    let tid: number;
+    if (tm) {
+      tid = tm.id;
+      await d.prepare('UPDATE teams SET name_en=?, name_ar=?, description_en=?, description_ar=?, how_to_join_en=?, how_to_join_ar=?, sort_order=?, visible=?, updated_at=?, updated_by=?, is_placeholder=0 WHERE id=?').bind(...f, tid).run();
+    } else {
+      const slug = await uniqueSlug('teams', values.name_en);
+      tid = (await d.prepare('INSERT INTO teams (name_en, name_ar, description_en, description_ar, how_to_join_en, how_to_join_ar, sort_order, visible, updated_at, updated_by, slug) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id').bind(...f, slug).first<{ id: number }>())!.id;
+    }
+    await logChange(by, 'teams', tid, tm ? 'update' : 'create', values.name_en).run();
+    return Astro.redirect(`/admin/teams/${tid}?saved=` + encodeURIComponent(tm ? 'Team saved' : 'Team created'), 303);
+  }
+}
+const v = (n: string, fallback: unknown = '') => (n in values ? values[n] : String(fallback ?? ''));
+// A placeholder description is shown empty so the editor writes a real one.
+const desc = (lang: 'en' | 'ar') => tm?.is_placeholder ? '' : tm?.[`description_${lang}`];
+---
+<Admin title={isNew ? 'New team' : String(tm!.name_en)} active="teams">
+  <p><a href="/admin/teams">← Teams</a></p>
+  <div class="page-head"><div><h1>{isNew ? 'New team' : tm!.name_en}</h1></div></div>
+  {Object.keys(errors).length > 0 && <div class="err-box" role="alert">Please fix these:<ul>{Object.values(errors).map((e) => <li>{e}</li>)}</ul></div>}
+  <form method="post" data-guard>
+    <section class="card form-grid">
+      <BiField name="name" label="Team name" en={v('name_en', tm?.name_en)} ar={v('name_ar', tm?.name_ar)} required error={errors.name} />
+      <BiField name="description" label="What the team does" hint="One or two sentences, e.g. what members learn or produce." long en={v('description_en', desc('en'))} ar={v('description_ar', desc('ar'))} required error={errors.description} />
+      <BiField name="how_to_join" label="How to join this team (optional)" hint="Only if it differs from the general application form." long en={v('how_to_join_en', tm?.how_to_join_en)} ar={v('how_to_join_ar', tm?.how_to_join_ar)} />
+      <div class="f" style="max-width:200px"><label for="f-order">Order on the page</label><input id="f-order" type="number" min="0" name="sort_order" value={v('sort_order', tm?.sort_order ?? 10)} /></div>
+      <label class="check"><input type="checkbox" name="visible" checked={tm ? Boolean(tm.visible) : true} /> Show this team on the Team page</label>
+    </section>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">{isNew ? 'Create team' : 'Save changes'}</button>
+      <a class="btn btn-ghost" href="/admin/teams">Cancel</a>
+      <span class="spacer"></span>
+      {tm && <button class="btn btn-danger" type="submit" name="_action" value="delete" formnovalidate data-confirm={`Delete ${tm.name_en}? Its leads stay in Cabinet & people.`}>Delete</button>}
+    </div>
+  </form>
+</Admin>
