@@ -7,7 +7,7 @@ type Block = { page: string; block: string; label: string; kind: string; text_en
 const d = db();
 const load = async () => (await d.prepare('SELECT * FROM page_text ORDER BY page, sort_order, block').all<Block>()).results;
 let blocks = await load();
-const pageNames: Record<string, string> = { home: 'Homepage', join: 'Join page', team: 'Team page', about: 'About page', 'why-join': 'Why join page', 'new-to-ie': 'New to IE page', members: 'Members page', companies: 'Companies page', game: 'Weekly puzzle page', contact: 'Contact page', privacy: 'Privacy page', events: 'Events page' };
+const pageNames: Record<string, string> = { home: 'Homepage', join: 'Join page', team: 'Team page', about: 'About page', 'why-join': 'Why join page', 'new-to-ie': 'New to IE page', members: 'Members page', companies: 'Companies page', game: 'Weekly puzzle page', alumni: 'Alumni page', contact: 'Contact page', privacy: 'Privacy page', events: 'Events page' };
 const by = Astro.locals.user!.email;
 const errors: Record<string, string> = {};
 

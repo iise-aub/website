@@ -5,3 +5,4 @@ dist/
 .dev.vars
 .env
 *.log
+db/media/cabinet-2026/load.sql

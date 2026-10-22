@@ -1,0 +1,137 @@
+---
+// Add or edit an alumnus: the person (name, photo, graduation year, LinkedIn) and their story.
+// Consent is required before a story can appear on the site; un-ticking it hides the story immediately.
+import Admin from '../../../layouts/Admin.astro';
+import BiField from '../../../components/admin/BiField.astro';
+import PhotoField from '../../../components/admin/PhotoField.astro';
+import { db } from '../../../lib/db';
+import { checked, field, getMedia, isUrlOrEmpty, logChange, now, savePhotoFromForm } from '../../../lib/admin';
+import { COUNTRIES, INDUSTRIES, countryName } from '../../../lib/alumni';
+
+type Row = { id: number; person_id: number; name_en: string; name_ar: string; grad_year: number | null; linkedin_url: string; linkedin_opt_in: number; photo_media_id: number | null;
+  job_title_en: string; job_title_ar: string; company: string; industry: string; country: string; story_en: string; story_ar: string; consent_on: string | null; visible: number; sort_order: number };
+const d = db();
+const by = Astro.locals.user!.email;
+const isNew = Astro.params.id === 'new';
+const id = isNew ? null : Number(Astro.params.id);
+if (!isNew && !Number.isInteger(id)) return Astro.redirect('/admin/alumni');
+const a = isNew ? null : await d.prepare(`SELECT a.*, p.name_en, p.name_ar, p.grad_year, p.linkedin_url, p.linkedin_opt_in, p.photo_media_id
+  FROM alumni_stories a JOIN people p ON p.id = a.person_id WHERE a.id = ?`).bind(id).first<Row>();
+if (!isNew && !a) return Astro.redirect('/admin/alumni?saved=' + encodeURIComponent('That entry no longer exists'));
+
+const errors: Record<string, string> = {};
+let values: Record<string, string> = {};
+let postedPhoto: number | null | undefined;
+let consentInput: boolean | null = null;
+const thisYear = new Date().getFullYear();
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  if (form.get('_action') === 'delete' && a) {
+    await d.batch([d.prepare('DELETE FROM people WHERE id = ?').bind(a.person_id), logChange(by, 'alumni', a.id, 'delete', a.name_en)]);
+    return Astro.redirect('/admin/alumni?saved=' + encodeURIComponent('Entry deleted'), 303);
+  }
+  const names = ['name_en', 'name_ar', 'grad_year', 'job_title_en', 'job_title_ar', 'company', 'industry', 'country', 'story_en', 'story_ar', 'linkedin_url', 'sort_order'];
+  values = Object.fromEntries(names.map((n) => [n, field(form, n)]));
+  postedPhoto = await savePhotoFromForm(form, 'photo');
+  consentInput = form.get('consent') === 'on';
+  const year = values.grad_year ? Number(values.grad_year) : null;
+  if (!values.name_en) errors.name = 'Enter their name.';
+  if (year !== null && (!Number.isInteger(year) || year < 1950 || year > thisYear + 6)) errors.year = 'Enter a graduation year, e.g. 2022.';
+  if (values.industry && !INDUSTRIES[values.industry]) errors.industry = 'Choose an industry from the list.';
+  if (values.country && !COUNTRIES.includes(values.country)) errors.country = 'Choose a country from the list.';
+  if (!isUrlOrEmpty(values.linkedin_url)) errors.linkedin = 'This must be a full link starting with https://';
+
+  if (Object.keys(errors).length === 0) {
+    const consentOn = consentInput ? (a?.consent_on || now().slice(0, 10)) : null;
+    const pFields = [values.name_en, values.name_ar, year, values.linkedin_url, checked(form, 'linkedin_opt_in'), postedPhoto ?? null, now(), by];
+    const aFields = [values.job_title_en, values.job_title_ar, values.company, values.industry, values.country, values.story_en, values.story_ar,
+      consentOn, checked(form, 'visible'), Number(values.sort_order) || 0, now(), by];
+    let aid: number;
+    if (a) {
+      aid = a.id;
+      await d.batch([
+        d.prepare('UPDATE people SET name_en=?, name_ar=?, grad_year=?, linkedin_url=?, linkedin_opt_in=?, photo_media_id=?, updated_at=?, updated_by=? WHERE id=?').bind(...pFields, a.person_id),
+        d.prepare('UPDATE alumni_stories SET job_title_en=?, job_title_ar=?, company=?, industry=?, country=?, story_en=?, story_ar=?, consent_on=?, visible=?, sort_order=?, updated_at=?, updated_by=? WHERE id=?').bind(...aFields, aid),
+        logChange(by, 'alumni', aid, 'update', values.name_en),
+      ]);
+    } else {
+      const pid = (await d.prepare('INSERT INTO people (name_en, name_ar, grad_year, linkedin_url, linkedin_opt_in, photo_media_id, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id').bind(...pFields).first<{ id: number }>())!.id;
+      aid = (await d.prepare(`INSERT INTO alumni_stories (job_title_en, job_title_ar, company, industry, country, story_en, story_ar, consent_on, visible, sort_order, updated_at, updated_by, person_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`).bind(...aFields, pid).first<{ id: number }>())!.id;
+      await d.batch([
+        d.prepare("INSERT INTO person_roles (person_id, role, position_en) VALUES (?, 'alumni', 'Alumni')").bind(pid),
+        logChange(by, 'alumni', aid, 'create', values.name_en),
+      ]);
+    }
+    return Astro.redirect(`/admin/alumni/${aid}?saved=` + encodeURIComponent(a ? 'Saved' : 'Alumnus added'), 303);
+  }
+}
+const v = (n: string, fallback: unknown = '') => (n in values ? values[n] : String(fallback ?? ''));
+const photo = await getMedia(postedPhoto !== undefined ? postedPhoto : a?.photo_media_id ?? null);
+const consent = consentInput ?? Boolean(a?.consent_on);
+const countries = [...COUNTRIES].sort((x, y) => countryName(x, 'en').localeCompare(countryName(y, 'en')));
+---
+<Admin title={isNew ? 'Add an alumnus' : a!.name_en} active="alumni">
+  <p><a href="/admin/alumni">← Alumni</a></p>
+  <div class="page-head"><div><h1>{isNew ? 'Add an alumnus' : a!.name_en}</h1></div></div>
+  {Object.keys(errors).length > 0 && <div class="err-box" role="alert">Please fix these:<ul>{Object.values(errors).map((e) => <li>{e}</li>)}</ul></div>}
+
+  <form method="post" data-guard>
+    <section class="card form-grid">
+      <h2>Person</h2>
+      <BiField name="name" label="Name" en={v('name_en', a?.name_en)} ar={v('name_ar', a?.name_ar)} required error={errors.name} />
+      <PhotoField name="photo" label="Photo (optional)" media={photo} hint="Square, clear face. Without one, the site shows their initials." />
+      <div class="f" style="max-width:220px">
+        <label for="f-year">Graduation year</label>
+        <input id="f-year" type="number" name="grad_year" min="1950" max={thisYear + 6} value={v('grad_year', a?.grad_year)} aria-invalid={errors.year ? 'true' : undefined} />
+        {errors.year && <p class="err">{errors.year}</p>}
+      </div>
+    </section>
+
+    <section class="card form-grid">
+      <h2>Where they are now</h2>
+      <BiField name="job_title" label="Job title" hint="e.g. Supply Chain Analyst" en={v('job_title_en', a?.job_title_en)} ar={v('job_title_ar', a?.job_title_ar)} />
+      <div class="f"><label for="f-company">Company</label><input id="f-company" type="text" name="company" value={v('company', a?.company)} /></div>
+      <div class="pair">
+        <div class="f">
+          <label for="f-industry">Industry</label>
+          <select id="f-industry" name="industry">
+            <option value="">—</option>
+            {Object.entries(INDUSTRIES).map(([k, l]) => <option value={k} selected={v('industry', a?.industry) === k}>{l.en}</option>)}
+          </select>
+        </div>
+        <div class="f">
+          <label for="f-country">Country</label>
+          <select id="f-country" name="country">
+            <option value="">—</option>
+            {countries.map((c) => <option value={c} selected={v('country', a?.country) === c}>{countryName(c, 'en')}</option>)}
+          </select>
+          <p class="hint">Missing a country? Ask the Technical Development team to add it.</p>
+        </div>
+      </div>
+      <BiField name="story" label="How I got here" hint="A few sentences in their own words: what they did at AUB, their first job, advice for students." long tall en={v('story_en', a?.story_en)} ar={v('story_ar', a?.story_ar)} />
+      <div class="f">
+        <label for="f-li">LinkedIn link (optional)</label>
+        <input id="f-li" type="url" name="linkedin_url" placeholder="https://www.linkedin.com/in/…" value={v('linkedin_url', a?.linkedin_url)} aria-invalid={errors.linkedin ? 'true' : undefined} />
+        {errors.linkedin && <p class="err">{errors.linkedin}</p>}
+      </div>
+      <label class="check"><input type="checkbox" name="linkedin_opt_in" checked={Boolean(a?.linkedin_opt_in)} /> They agreed to show their LinkedIn</label>
+    </section>
+
+    <section class="card form-grid">
+      <h2>Permission and visibility</h2>
+      <label class="check"><input type="checkbox" name="consent" checked={consent} /> <span>They agreed to have this entry on the IISE AUB website{a?.consent_on && <> (recorded {a.consent_on})</>}. <strong>Required</strong>: without it the entry stays hidden.</span></label>
+      <label class="check"><input type="checkbox" name="visible" checked={a ? Boolean(a.visible) : true} /> Show on the Alumni page</label>
+      <div class="f" style="max-width:200px"><label for="f-order">Order (lower first)</label><input id="f-order" type="number" min="0" name="sort_order" value={v('sort_order', a?.sort_order ?? 10)} /></div>
+      <p class="hint">If someone asks to be removed, untick consent (hides it at once) or delete the entry.</p>
+    </section>
+
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">{isNew ? 'Add alumnus' : 'Save changes'}</button>
+      <a class="btn btn-ghost" href="/admin/alumni">Cancel</a>
+      <span class="spacer"></span>
+      {a && <button class="btn btn-danger" type="submit" name="_action" value="delete" formnovalidate data-confirm={`Delete ${a.name_en} and their story? This can’t be undone.`}>Delete</button>}
+    </div>
+  </form>
+</Admin>

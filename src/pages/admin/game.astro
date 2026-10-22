@@ -3,7 +3,7 @@
 import Admin from '../../layouts/Admin.astro';
 import { db } from '../../lib/db';
 import { field, logChange, now } from '../../lib/admin';
-import { metres, previousWeekId, weekId } from '../../lib/game';
+import { previousWeekId, weekId } from '../../lib/game';
 
 const d = db();
 const by = Astro.locals.user!.email;
@@ -56,7 +56,7 @@ const groups = [{ title: `This week (${week})`, rows: scores.filter((r) => r.wee
   <div class="page-head">
     <div>
       <h1>Weekly puzzle</h1>
-      <p>A new Coffee Run map is generated automatically every Monday (Beirut time); nothing to prepare. {stats.players} players so far, {stats.plays} plays.</p>
+      <p>A new Depot Drop city is generated automatically every Monday (Beirut time); nothing to prepare. {stats.players} players so far, {stats.plays} plays.</p>
     </div>
     <a class="btn btn-ghost" href="/en/game" target="_blank" rel="noopener">Open the puzzle ↗</a>
   </div>
@@ -84,7 +84,7 @@ const groups = [{ title: `This week (${week})`, rows: scores.filter((r) => r.wee
             <li>
               <div class="list-main">
                 <span class="list-title">{r.nickname}</span>
-                <span class="list-meta">{r.score} pts · {metres(r.result)} m · {fmt(r.duration_ms)}</span>
+                <span class="list-meta">{r.score} pts · {r.result} blocks · {fmt(r.duration_ms)}</span>
               </div>
               {r.hidden ? <span class="badge badge-off">Score hidden</span> : null}
               {r.player_hidden ? <span class="badge badge-off">Nickname hidden</span> : null}

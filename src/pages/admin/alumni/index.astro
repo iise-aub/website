@@ -1,0 +1,36 @@
+---
+import Admin from '../../../layouts/Admin.astro';
+import { db } from '../../../lib/db';
+import { INDUSTRIES } from '../../../lib/alumni';
+
+type A = { id: number; name_en: string; grad_year: number | null; company: string; industry: string; country: string; visible: number; consent_on: string | null; story_en: string; photo: number | null };
+const { results } = await db().prepare(`SELECT a.id, p.name_en, p.grad_year, p.photo_media_id AS photo, a.company, a.industry, a.country, a.visible, a.consent_on, a.story_en
+  FROM alumni_stories a JOIN people p ON p.id = a.person_id ORDER BY a.sort_order, p.grad_year DESC, p.name_en`).all<A>();
+---
+<Admin title="Alumni" active="alumni">
+  <div class="page-head">
+    <div>
+      <h1>Alumni</h1>
+      <p>Stories on the Alumni page. Only add someone after they agree to be shown; a story stays off the site until consent is ticked.</p>
+    </div>
+    <a class="btn btn-primary" href="/admin/alumni/new">+ Add an alumnus</a>
+  </div>
+  <section class="card">
+    {results.length === 0 ? <p class="empty">No alumni yet. The Alumni page shows “stories coming soon” until the first one is added.</p> : (
+      <ul class="list">
+        {results.map((a) => (
+          <li>
+            <div class="list-main">
+              <a class="list-title" href={`/admin/alumni/${a.id}`}>{a.name_en}</a>
+              <span class="list-meta">{[a.grad_year && `Class of ${a.grad_year}`, a.company, INDUSTRIES[a.industry]?.en, a.country].filter(Boolean).join(' · ') || '—'}</span>
+            </div>
+            {!a.consent_on ? <span class="badge badge-warn">No consent: hidden</span> : a.visible ? <span class="badge badge-ok">On the site</span> : <span class="badge badge-off">Hidden</span>}
+            {!a.story_en && <span class="badge badge-warn">no story</span>}
+            {!a.photo && <span class="badge badge-draft">no photo</span>}
+            <a class="icon-btn" href={`/admin/alumni/${a.id}`}>Edit</a>
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+</Admin>

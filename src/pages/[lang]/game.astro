@@ -1,13 +1,15 @@
 ---
-// Weekly puzzle: Coffee Run. Deliver coffee to every stop and back to the cart; shortest route wins.
+// Weekly puzzle: Depot Drop. Place 3 warehouses in a city with a river, bridges and buildings so that
+// every house's deliveries travel the least total distance. The server knows the best possible layout.
 import Base from '../../layouts/Base.astro';
 import T from '../../components/T.astro';
 import PageHead from '../../components/PageHead.astro';
 import Rich from '../../components/Rich.astro';
 import Leaderboard from '../../components/Leaderboard.astro';
+import SolutionBoard from '../../components/SolutionBoard.astro';
 import { isLang, pick, t } from '../../lib/i18n';
-import { loadPage } from '../../lib/db';
-import { metres, previousWeekId, weekBounds, weekId } from '../../lib/game';
+import { db, loadPage } from '../../lib/db';
+import { previousWeekId, weekBounds, weekId } from '../../lib/game';
 import { PLAYER_COOKIE, getPlayer, myScore, termBoard, weekBoard, weekRank, winner } from '../../lib/game-db';
 
 const { lang } = Astro.params;
@@ -26,18 +28,22 @@ const [mine, rank, board, term, last] = await Promise.all([
   termBoard(settings.game_term_start || '2026-09-01'),
   winner(previousWeekId()),
 ]);
+// Last week's city and its best layout (only stored if someone played it).
+const lastWeek = await db().prepare('SELECT grid, best, best_answer FROM game_weeks WHERE week = ? ORDER BY created_at DESC LIMIT 1').bind(previousWeekId()).first<{ grid: string; best: number; best_answer: string }>();
 const msLeft = new Date(end).getTime() - Date.now();
 const daysLeft = Math.floor(msLeft / 864e5), hoursLeft = Math.floor((msLeft % 864e5) / 36e5);
 const fmt = (ms: number) => { const s = Math.round(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+const L = (k: Parameters<typeof t>[1]) => t(lang, k);
 const labels = {
-  undo: t(lang, 'gUndo'), reset: t(lang, 'gReset'), submit: t(lang, 'gSubmit'), distance: t(lang, 'gDistance'), left: t(lang, 'gLeft'),
-  cart: t(lang, 'gCart'), visited: t(lang, 'gVisited'), taken: t(lang, 'gTaken'), invalid: t(lang, 'gInvalid'), error: t(lang, 'gError'),
-  weekEnded: t(lang, 'gWeekEnded'),
+  taken: L('gTaken'), invalid: L('gInvalid'), error: L('gError'), weekEnded: L('gWeekEnded'),
+  tapEmpty: L('gTapEmpty'), allPlaced: L('gAllPlaced'), land: L('gLand'), river: L('gRiver'), bridge: L('gBridge'),
+  building: L('gBuilding'), house: L('gHouse'), deliveries: L('gDeliveries'), warehouse: L('gWarehouse'),
+  row: L('gRow'), col: L('gCol'), servedBy: L('gServedBy'),
 };
 ---
 <Base lang={lang} title={`${tx('title').text} · ${tx('eyebrow').text}`} description={tx('intro').text} settings={settings}>
   <PageHead lang={lang} eyebrow={tx('eyebrow')} title={tx('title')} intro={tx('intro')}>
-    <p class="week-badge"><span class="dot" aria-hidden="true"></span>{week.replace('-W', ' · W')} · {t(lang, 'gNewIn')} {daysLeft}{t(lang, 'gDays')} {hoursLeft}{t(lang, 'gHours')}</p>
+    <p class="week-badge"><span class="dot" aria-hidden="true"></span>{week.replace('-W', ' · W')} · {L('gNewIn')} {daysLeft}{L('gDays')} {hoursLeft}{L('gHours')}</p>
   </PageHead>
 
   <div class="wrap game-grid">
@@ -46,55 +52,57 @@ const labels = {
         <T v={tx('off_text')} page={lang} as="p" class="off" />
       ) : mine ? (
         <div class="result">
-          <p class="r-label">{t(lang, 'gYourScore')}</p>
+          <p class="r-label">{L('gYourScore')}</p>
           <p class="r-score">{mine.score}<span>/1000</span></p>
           <dl class="r-facts">
-            <div><dt>{t(lang, 'gYourRoute')}</dt><dd>{metres(mine.result)} m</dd></div>
-            <div><dt>{t(lang, 'gBestRoute')}</dt><dd>{metres(mine.best)} m</dd></div>
-            <div><dt>{t(lang, 'gTime')}</dt><dd>{fmt(mine.duration_ms)}</dd></div>
-            {rank && <div><dt>{t(lang, 'gRank')}</dt><dd>#{rank.rank} {t(lang, 'gOf')} {rank.players}</dd></div>}
+            <div><dt>{L('gYourTotal')}</dt><dd>{mine.result} {L('gBlocks')}</dd></div>
+            <div><dt>{L('gBestTotal')}</dt><dd>{mine.best} {L('gBlocks')}</dd></div>
+            <div><dt>{L('gTime')}</dt><dd>{fmt(mine.duration_ms)}</dd></div>
+            {rank && <div><dt>{L('gRank')}</dt><dd>#{rank.rank} {L('gOf')} {rank.players}</dd></div>}
           </dl>
-          <p class="r-note">{t(lang, 'gPlayed')}</p>
+          <p class="r-note">{L('gPlayed')}</p>
         </div>
       ) : (
         <div class="game" data-game data-labels={JSON.stringify(labels)}>
           <div class="intro-panel" data-intro>
             <details class="howto" open>
-              <summary>{t(lang, 'gHowTo')}</summary>
+              <summary>{L('gHowTo')}</summary>
               <Rich v={tx('rules')} page={lang} />
             </details>
             <form class="start-form" data-start-form novalidate>
               {!player && (
                 <div class="nick">
-                  <label for="nickname">{t(lang, 'gNickname')}</label>
+                  <label for="nickname">{L('gNickname')}</label>
                   <input id="nickname" name="nickname" type="text" minlength="2" maxlength="20" autocomplete="nickname" required dir="auto" />
                   <T v={tx('nickname_hint')} page={lang} as="p" class="hint" />
                 </div>
               )}
-              {player && <p class="hint">{t(lang, 'gPlayer')}: <strong dir="auto">{player.nickname}</strong></p>}
+              {player && <p class="hint">{L('gPlayer')}: <strong dir="auto">{player.nickname}</strong></p>}
               <p class="form-error" data-form-error role="alert"></p>
-              <button class="btn btn-primary btn-lg" type="submit">{t(lang, 'gStart')}</button>
+              <button class="btn btn-primary btn-lg" type="submit">{L('gStart')}</button>
             </form>
           </div>
 
           <div class="play" data-play hidden>
-            <div class="hud" aria-live="polite">
-              <span><strong data-distance>0</strong> m</span>
-              <span><strong data-left>0</strong> {t(lang, 'gLeft')}</span>
-              <span data-clock>0:00</span>
+            <div class="hud">
+              <span class="hud-total"><span class="hud-label">{L('gTotal')}</span> <strong data-total>—</strong></span>
+              <span class="hud-depots" aria-hidden="true" data-pips></span>
+              <span data-clock class="hud-clock">0:00</span>
             </div>
-            <div class="board" dir="ltr" data-board>
-              <svg class="board-svg" viewBox="0 0 100 100" aria-hidden="true" preserveAspectRatio="none">
-                <defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M10 0H0V10" fill="none" stroke="var(--steel-200)" stroke-width="0.25" /></pattern></defs>
-                <rect width="100" height="100" fill="url(#grid)" />
-                <polyline class="route" data-route points="" />
-                <line class="closing" data-closing x1="0" y1="0" x2="0" y2="0" />
-              </svg>
+            <p class="hint status" data-status aria-live="polite"></p>
+            <div class="board-wrap" dir="ltr">
+              <div class="board" data-board role="grid" aria-label={tx('title').text}></div>
+              <svg class="routes" data-routes aria-hidden="true" preserveAspectRatio="none"></svg>
             </div>
+            <ul class="legend" aria-hidden="true">
+              <li><span class="sw sw-river"></span>{L('gRiver')}</li>
+              <li><span class="sw sw-bridge"></span>{L('gBridge')}</li>
+              <li><span class="sw sw-building"></span>{L('gBuilding')}</li>
+              <li><span class="sw sw-house">3</span>{L('gHouse')} ({L('gDeliveries')})</li>
+            </ul>
             <div class="controls">
-              <button type="button" class="btn btn-ghost" data-undo>{t(lang, 'gUndo')}</button>
-              <button type="button" class="btn btn-ghost" data-reset>{t(lang, 'gReset')}</button>
-              <button type="button" class="btn btn-primary" data-submit disabled>{t(lang, 'gSubmit')}</button>
+              <button type="button" class="btn btn-ghost" data-reset>{L('gReset')}</button>
+              <button type="button" class="btn btn-primary" data-submit disabled>{L('gLockIn')}</button>
             </div>
             <p class="form-error" data-play-error role="alert"></p>
           </div>
@@ -105,80 +113,152 @@ const labels = {
     <aside class="side">
       {last && (
         <section class="winner" aria-labelledby="winner-h">
-          <p class="w-label" id="winner-h">🏆 {t(lang, 'gLastWinner')}</p>
+          <p class="w-label" id="winner-h">🏆 {L('gLastWinner')}</p>
           <p class="w-name" dir="auto">{last.nickname}</p>
-          <p class="w-score">{last.score} {t(lang, 'gPts')}</p>
+          <p class="w-score">{last.score} {L('gPts')}</p>
         </section>
       )}
       <Leaderboard lang={lang} week={board} term={term} me={player?.id} />
+      {lastWeek && <SolutionBoard lang={lang} grid={JSON.parse(lastWeek.grid)} depots={JSON.parse(lastWeek.best_answer)} best={lastWeek.best} />}
     </aside>
   </div>
 </Base>
 
 <script>
-  type Stop = { x: number; y: number; name: string };
+  const COLORS = ['#1a3668', '#2f7fd1', '#b45309'];
+  const WAREHOUSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M12 3 2 8v13h5v-7h10v7h5V8L12 3Zm-3 13h6v1.5H9V16Zm0 3h6v2H9v-2Z"/></svg>';
+  const HOUSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3 2 11h3v9h5v-5h4v5h5v-9h3L12 3Z"/></svg>';
+
   document.querySelectorAll<HTMLElement>('[data-game]').forEach((root) => {
     const L = JSON.parse(root.dataset.labels!) as Record<string, string>;
     const form = root.querySelector<HTMLFormElement>('[data-start-form]')!;
     const formError = root.querySelector<HTMLElement>('[data-form-error]')!;
     const intro = root.querySelector<HTMLElement>('[data-intro]')!;
     const play = root.querySelector<HTMLElement>('[data-play]')!;
-    const board = root.querySelector<HTMLElement>('[data-board]')!;
-    const route = root.querySelector<SVGPolylineElement>('[data-route]')!;
-    const closing = root.querySelector<SVGLineElement>('[data-closing]')!;
-    const distEl = root.querySelector<HTMLElement>('[data-distance]')!;
-    const leftEl = root.querySelector<HTMLElement>('[data-left]')!;
+    const boardEl = root.querySelector<HTMLElement>('[data-board]')!;
+    const routes = root.querySelector<SVGSVGElement>('[data-routes]')!;
+    const totalEl = root.querySelector<HTMLElement>('[data-total]')!;
+    const pips = root.querySelector<HTMLElement>('[data-pips]')!;
+    const status = root.querySelector<HTMLElement>('[data-status]')!;
     const clock = root.querySelector<HTMLElement>('[data-clock]')!;
     const submit = root.querySelector<HTMLButtonElement>('[data-submit]')!;
     const playError = root.querySelector<HTMLElement>('[data-play-error]')!;
-    let stops: Stop[] = [], order: number[] = [], token = '', started = 0, timer = 0;
-    const buttons: HTMLButtonElement[] = [];
 
-    const d = (a: Stop, b: Stop) => Math.hypot(a.x - b.x, a.y - b.y);
-    function draw() {
-      const path = [0, ...order].map((i) => `${stops[i].x},${stops[i].y}`).join(' ');
-      route.setAttribute('points', path);
-      const done = order.length === stops.length - 1;
-      const lastStop = stops[order[order.length - 1] ?? 0];
-      closing.setAttribute('x1', String(lastStop.x)); closing.setAttribute('y1', String(lastStop.y));
-      closing.setAttribute('x2', String(stops[0].x)); closing.setAttribute('y2', String(stops[0].y));
-      closing.style.opacity = done ? '1' : '0';
-      let len = 0, prev = 0;
-      for (const i of order) { len += d(stops[prev], stops[i]); prev = i; }
-      if (done) len += d(stops[prev], stops[0]);
-      distEl.textContent = Math.round(len * 10).toLocaleString();
-      leftEl.textContent = String(stops.length - 1 - order.length);
-      buttons.forEach((b, k) => {
-        const pos = order.indexOf(k + 1);
-        b.setAttribute('aria-pressed', String(pos >= 0));
-        b.querySelector('.pin')!.textContent = pos >= 0 ? String(pos + 1) : '';
-        b.classList.toggle('is-last', pos === order.length - 1 && pos >= 0);
-        b.setAttribute('aria-label', `${stops[k + 1].name}${pos >= 0 ? ` (${pos + 1}, ${L.visited})` : ''}`);
+    let grid: string[] = [], W = 10, H = 10, K = 3, token = '', started = 0, timer = 0;
+    let depots: number[] = [];
+    const cells: HTMLButtonElement[] = [];
+    const at = (i: number) => grid[(i / W) | 0][i % W];
+    const passable = (c: string) => c !== '~' && c !== '#';
+
+    // Breadth-first search from a warehouse: distance and the previous square on the shortest path.
+    function bfs(start: number) {
+      const dist = new Int32Array(W * H).fill(-1), prev = new Int32Array(W * H).fill(-1);
+      const q = [start]; dist[start] = 0;
+      for (let h = 0; h < q.length; h++) {
+        const i = q[h], x = i % W, y = (i / W) | 0;
+        for (const [nx, ny] of [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]) {
+          if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+          const j = ny * W + nx;
+          if (dist[j] !== -1 || !passable(grid[ny][nx])) continue;
+          dist[j] = dist[i] + 1; prev[j] = i; q.push(j);
+        }
+      }
+      return { dist, prev };
+    }
+
+    function label(i: number, served?: number) {
+      const c = at(i), x = i % W, y = (i / W) | 0;
+      const where = `${L.row} ${y + 1}, ${L.col} ${x + 1}`;
+      if (depots.includes(i)) return `${where}: ${L.warehouse} ${depots.indexOf(i) + 1}`;
+      if (c >= '1' && c <= '9') return `${where}: ${L.house}, ${c} ${L.deliveries}${served !== undefined ? `, ${L.servedBy} ${served + 1}` : ''}`;
+      return `${where}: ${c === '~' ? L.river : c === '=' ? L.bridge : c === '#' ? L.building : L.land}`;
+    }
+
+    function render() {
+      routes.innerHTML = '';
+      const maps = depots.map(bfs);
+      let total = 0;
+      const servedBy = new Map<number, number>();
+      for (let i = 0; i < W * H; i++) {
+        const c = at(i);
+        if (!(c >= '1' && c <= '9')) continue;
+        if (!maps.length) continue;
+        let best = -1, bestD = Infinity;
+        maps.forEach((m, k) => { const d = m.dist[i]; if (d >= 0 && d < bestD) { bestD = d; best = k; } });
+        if (best < 0) continue;
+        servedBy.set(i, best);
+        total += Number(c) * bestD;
+        // Draw the delivery route from the house back to its warehouse.
+        const pts: string[] = [];
+        for (let j = i; j !== -1; j = maps[best].prev[j]) pts.push(`${(j % W) + 0.5},${((j / W) | 0) + 0.5}`);
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+        line.setAttribute('points', pts.join(' '));
+        line.setAttribute('stroke', COLORS[best]);
+        routes.appendChild(line);
+      }
+      cells.forEach((b, i) => {
+        const d = depots.indexOf(i);
+        b.classList.toggle('is-depot', d >= 0);
+        b.style.setProperty('--c', d >= 0 ? COLORS[d] : servedBy.has(i) ? COLORS[servedBy.get(i)!] : 'transparent');
+        b.classList.toggle('is-served', servedBy.has(i));
+        if (at(i) === '.') b.innerHTML = d >= 0 ? WAREHOUSE : '';
+        b.setAttribute('aria-label', label(i, servedBy.get(i)));
+        if (at(i) === '.') b.setAttribute('aria-pressed', String(d >= 0));
       });
-      submit.disabled = !done;
+      const complete = depots.length === K;
+      totalEl.textContent = complete ? String(total) : '—';
+      pips.innerHTML = Array.from({ length: K }, (_, k) => `<span class="pip${k < depots.length ? ' on' : ''}" style="--c:${COLORS[k]}"></span>`).join('');
+      status.textContent = complete ? L.allPlaced : L.tapEmpty;
+      submit.disabled = !complete;
     }
 
     function build() {
-      const cart = document.createElement('span');
-      cart.className = 'cart'; cart.style.left = `${stops[0].x}%`; cart.style.top = `${stops[0].y}%`;
-      cart.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="#fff" d="M4 8h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8Zm12 1h1.5a2.5 2.5 0 0 1 0 5H16v-1.6h1.5a.9.9 0 0 0 0-1.8H16V9ZM3 19.5h14V21H3v-1.5ZM8 2.5c1 1 1 2 0 3m3-3c1 1 1 2 0 3" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg>'; cart.setAttribute('role', 'img'); cart.setAttribute('aria-label', L.cart);
-      board.appendChild(cart);
-      stops.slice(1).forEach((s, k) => {
-        const b = document.createElement('button');
-        b.type = 'button'; b.className = 'stop';
-        b.style.left = `${s.x}%`; b.style.top = `${s.y}%`;
-        if (s.x < 16) b.classList.add('edge-start'); else if (s.x > 84) b.classList.add('edge-end');
-        if (s.y > 88) b.classList.add('edge-bottom');
-        b.innerHTML = `<span class="pin" aria-hidden="true"></span><span class="label">${s.name.replace(/</g, '&lt;')}</span>`;
-        b.addEventListener('click', () => {
-          const i = k + 1, pos = order.indexOf(i);
-          if (pos === -1) order.push(i);
-          else if (pos === order.length - 1) order.pop(); // tap the last stop again to undo
-          draw();
-        });
-        buttons.push(b); board.appendChild(b);
-      });
-      draw();
+      boardEl.style.setProperty('--w', String(W));
+      routes.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      for (let y = 0; y < H; y++) {
+        const row = document.createElement('div');
+        row.setAttribute('role', 'row');
+        row.className = 'brow';
+        for (let x = 0; x < W; x++) {
+          const i = y * W + x, c = at(i);
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.setAttribute('role', 'gridcell');
+          b.tabIndex = i === 0 ? 0 : -1;
+          b.className = `cell ${c === '.' ? 'land' : c === '~' ? 'river' : c === '=' ? 'bridge' : c === '#' ? 'building' : 'house'}`;
+          if (c >= '1' && c <= '9') b.innerHTML = `${HOUSE}<span class="n">${c}</span>`;
+          if (c !== '.') b.setAttribute('aria-disabled', 'true');
+          b.addEventListener('click', () => toggle(i));
+          b.addEventListener('keydown', (e) => move(e, i));
+          cells.push(b);
+          row.appendChild(b);
+        }
+        boardEl.appendChild(row);
+      }
+      render();
+    }
+
+    function toggle(i: number) {
+      if (at(i) !== '.') return;
+      const k = depots.indexOf(i);
+      if (k >= 0) depots.splice(k, 1);
+      else if (depots.length < K) depots.push(i);
+      else { status.textContent = L.allPlaced; return; }
+      render();
+    }
+
+    // Arrow keys move around the board (one tab stop for the whole grid).
+    function move(e: KeyboardEvent, i: number) {
+      const x = i % W, y = (i / W) | 0;
+      const to = { ArrowRight: [x + 1, y], ArrowLeft: [x - 1, y], ArrowDown: [x, y + 1], ArrowUp: [x, y - 1] }[e.key];
+      if (!to) return;
+      e.preventDefault();
+      const [nx, ny] = to;
+      if (nx < 0 || ny < 0 || nx >= W || ny >= H) return;
+      cells[i].tabIndex = -1;
+      const next = cells[ny * W + nx];
+      next.tabIndex = 0;
+      next.focus();
     }
 
     form.addEventListener('submit', async (e) => {
@@ -186,13 +266,13 @@ const labels = {
       formError.textContent = '';
       const nickname = (form.querySelector<HTMLInputElement>('#nickname')?.value ?? '').trim();
       const res = await fetch('/api/game/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nickname }) });
-      const data = (await res.json().catch(() => ({}))) as { error?: string; token?: string; stops?: Stop[] };
+      const data = (await res.json().catch(() => ({}))) as { error?: string; token?: string; grid?: string[]; w?: number; h?: number; depots?: number };
       if (!res.ok) {
         if (data.error === 'played') return location.reload();
         formError.textContent = data.error === 'taken' ? L.taken : data.error === 'length' || data.error === 'chars' ? L.invalid : L.error;
         return;
       }
-      token = data.token!; stops = data.stops!;
+      token = data.token!; grid = data.grid!; W = data.w!; H = data.h!; K = data.depots!;
       intro.hidden = true; play.hidden = false;
       build();
       started = Date.now();
@@ -200,15 +280,14 @@ const labels = {
         const s = Math.floor((Date.now() - started) / 1000);
         clock.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
       }, 500);
-      board.scrollIntoView({ block: 'nearest' });
-      buttons[0]?.focus({ preventScroll: true });
+      boardEl.scrollIntoView({ block: 'nearest' });
+      cells[0]?.focus({ preventScroll: true });
     });
 
-    root.querySelector('[data-undo]')!.addEventListener('click', () => { order.pop(); draw(); });
-    root.querySelector('[data-reset]')!.addEventListener('click', () => { order = []; draw(); });
+    root.querySelector('[data-reset]')!.addEventListener('click', () => { depots = []; render(); });
     submit.addEventListener('click', async () => {
       submit.disabled = true; playError.textContent = '';
-      const res = await fetch('/api/game/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, order }) });
+      const res = await fetch('/api/game/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, depots }) });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (res.ok || data.error === 'played') { clearInterval(timer); location.reload(); return; }
       playError.textContent = data.error === 'week-ended' ? L.weekEnded : L.error;
@@ -223,6 +302,7 @@ const labels = {
   .game-grid { display: grid; gap: 20px; padding-block: 24px; align-items: start; }
   @media (min-width: 960px) { .game-grid { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); } }
   .play-card { background: var(--white); border: 1px solid var(--steel-200); border-radius: calc(var(--radius) + 4px); padding: 20px; box-shadow: var(--shadow); }
+  @media (max-width: 480px) { .play-card { padding: 14px; } }
   .off { margin: 0; font-size: 1.1rem; }
   .howto { margin-bottom: 18px; }
   .howto summary { cursor: pointer; font-weight: 700; color: var(--navy-800); margin-bottom: 10px; }
@@ -234,39 +314,50 @@ const labels = {
   .form-error { margin: 0; color: #b91c1c; font-weight: 600; min-height: 1.2em; }
   .btn-lg { min-height: 54px; padding-inline: 1.8em; }
 
-  .hud { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 10px; font-variant-numeric: tabular-nums; color: var(--ink-soft); }
-  .hud strong { color: var(--navy-800); font-size: 1.2rem; }
-  .board {
-    position: relative; aspect-ratio: 1; width: 100%; border-radius: 14px; overflow: hidden; touch-action: manipulation;
-    background: linear-gradient(160deg, #f7f9fc, #eaf0f7); border: 1px solid var(--steel-200);
+  /* HUD */
+  .hud { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+  .hud-label { color: var(--grey-600); font-size: 0.9rem; }
+  .hud-total strong { color: var(--navy-800); font-size: 1.6rem; font-weight: 800; }
+  .hud-depots { display: inline-flex; gap: 6px; }
+  .hud-depots :global(.pip) { width: 14px; height: 14px; border-radius: 4px; border: 2px solid var(--c); background: transparent; }
+  .hud-depots :global(.pip.on) { background: var(--c); }
+  .hud-clock { color: var(--ink-soft); }
+  .status { margin-bottom: 10px; min-height: 1.4em; }
+
+  /* Board */
+  .board-wrap { position: relative; width: 100%; aspect-ratio: 1; }
+  .board { position: absolute; inset: 0; display: grid; grid-template-rows: repeat(var(--w, 10), 1fr); border-radius: 12px; overflow: hidden; border: 1px solid var(--steel-300); }
+  .board :global(.brow) { display: grid; grid-template-columns: repeat(var(--w, 10), 1fr); }
+  .routes { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .routes :global(polyline) { fill: none; stroke-width: 3px; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; opacity: 0.75; }
+  .board :global(.cell) {
+    position: relative; display: grid; place-items: center; padding: 0; margin: 0; border: 0; font: inherit;
+    box-shadow: inset 0 0 0 0.5px rgb(16 33 63 / 0.12); cursor: default; min-width: 0; min-height: 0;
   }
-  .board-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-  .route { fill: none; stroke: var(--navy-800); stroke-width: 0.9; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
-  .board .route { stroke-width: 3px; }
-  .closing { stroke: var(--slate-500); stroke-width: 3px; stroke-dasharray: 6 6; vector-effect: non-scaling-stroke; transition: opacity 200ms ease; }
-  .board :global(.cart), .board :global(.stop) { position: absolute; transform: translate(-50%, -50%); }
-  .board :global(.cart) { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--navy-800); font-size: 20px; box-shadow: 0 0 0 5px rgb(26 54 104 / 0.18); z-index: 2; }
-  /* Stops are not separate layers, so every pin sits above every label. */
-  .board :global(.stop) {
-    display: grid; place-items: center; width: 44px; height: 44px; padding: 0; background: none; border: 0; cursor: pointer;
-    font: inherit; color: var(--navy-900);
+  .board :global(.cell:focus-visible) { outline: 3px solid var(--focus); outline-offset: -3px; z-index: 3; }
+  .board :global(.land) { background: #f3f6f9; cursor: pointer; }
+  @media (hover: hover) and (pointer: fine) { .board :global(.land:not(.is-depot):hover) { background: #e3eaf3; } }
+  .board :global(.river) { background: repeating-linear-gradient(160deg, #7fb0de 0 6px, #6ea3d6 6px 12px); }
+  .board :global(.bridge) { background: repeating-linear-gradient(90deg, #a87c52 0 5px, #8d6440 5px 7px); }
+  .board :global(.building) { background: linear-gradient(160deg, #56657e, #3c4a62); }
+  .board :global(.building)::after { content: ''; width: 46%; height: 46%; background: radial-gradient(circle, rgb(255 255 255 / 0.35) 1.2px, transparent 1.6px) 0 0 / 6px 6px; }
+  .board :global(.house) { background: #fff; color: var(--grey-600); }
+  .board :global(.house svg) { width: 52%; height: 52%; }
+  .board :global(.house.is-served) { color: var(--c); background: color-mix(in srgb, var(--c) 10%, #fff); }
+  .board :global(.house .n) {
+    position: absolute; top: 2px; right: 2px; min-width: 16px; height: 16px; padding: 0 3px; border-radius: 8px;
+    background: var(--navy-900); color: #fff; font-size: 0.68rem; font-weight: 800; line-height: 16px; text-align: center; font-family: var(--font-latin);
   }
-  .board :global(.pin) {
-    position: relative; z-index: 2; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--white); border: 3px solid var(--slate-500);
-    transition: transform 160ms var(--ease-out), background-color 160ms ease, border-color 160ms ease; font-size: 0.75rem; font-weight: 800; color: #fff;
-  }
-  .board :global(.stop[aria-pressed='true'] .pin) { background: var(--navy-800); border-color: var(--navy-800); }
-  .board :global(.stop.is-last .pin) { box-shadow: 0 0 0 5px rgb(26 54 104 / 0.2); }
-  .board :global(.stop:active .pin) { transform: scale(0.9); }
-  .board :global(.label) {
-    position: absolute; z-index: 1; top: calc(50% + 14px); left: 50%; transform: translateX(-50%); pointer-events: none;
-    font-size: 0.68rem; font-weight: 700; white-space: nowrap; padding: 1px 6px; border-radius: 6px; background: rgb(255 255 255 / 0.88);
-    border: 1px solid var(--steel-200); line-height: 1.4;
-  }
-  .board :global(.edge-start .label) { left: 8px; transform: none; }
-  .board :global(.edge-end .label) { left: auto; right: 8px; transform: none; }
-  .board :global(.edge-bottom .label) { top: auto; bottom: calc(50% + 14px); }
-  @media (max-width: 480px) { .board :global(.label) { font-size: 0.6rem; padding: 0 4px; } }
+  .board :global(.is-depot) { background: var(--c) !important; z-index: 2; }
+  .board :global(.is-depot svg) { width: 62%; height: 62%; }
+  @media (prefers-reduced-motion: no-preference) { .board :global(.is-depot svg) { animation: drop 260ms var(--ease-out); } }
+  @keyframes drop { from { transform: translateY(-30%) scale(0.85); opacity: 0; } to { transform: none; opacity: 1; } }
+
+  .legend { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 0; margin: 10px 0 0; font-size: 0.85rem; color: var(--grey-600); }
+  .legend li { display: inline-flex; align-items: center; gap: 6px; }
+  .sw { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 4px; font-size: 0.65rem; font-weight: 800; }
+  .sw-river { background: #7fb0de; } .sw-bridge { background: #a87c52; } .sw-building { background: #48566f; }
+  .sw-house { background: var(--navy-900); color: #fff; }
   .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
   .controls [data-submit] { margin-inline-start: auto; }
 

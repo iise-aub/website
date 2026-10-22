@@ -1,4 +1,6 @@
-// Cloudflare settings. The same code runs as two Workers that share one database and one photo store:
+// Cloudflare settings. TEMPORARY PREVIEW on Saad's personal Cloudflare account (s-majbour.workers.dev), Oct 22 2026.
+// Move to the chapter account (iise-aub.workers.dev or the domain) before launch; see DECISIONS.md.
+// The same code runs as two Workers that share one database and one photo store:
 //  - "www"   → the public site, https://www.iise-aub.workers.dev   (never serves /admin)
 //  - "admin" → the editing panel, https://admin.iise-aub.workers.dev (whole Worker behind Cloudflare Access)
 // Deploy the public site with `npm run deploy`, the panel with `npm run deploy:admin`.
@@ -13,18 +15,21 @@
     {
       "binding": "DB",
       "database_name": "iise-aub-db",
-      // Replaced with the real ID when the chapter's Cloudflare account exists.
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      // TEMPORARY: database on Saad's personal account (preview). Replace when moving to the chapter account.
+      "database_id": "1f390751-f80d-41a0-9f91-f76fa3f44d6c",
       "migrations_dir": "migrations"
     }
   ],
-  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "iise-aub-media" }],
+  // Photos are stored in the database for now (no card needed). To use R2 later, add:
+  // "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "iise-aub-media" }],
   "vars": {
     "APP_ROLE": "public",
+    // "1" = hidden preview: search engines are asked not to index the site. Set to "0" on launch day.
+    "NOINDEX": "1",
     // Cloudflare's published Turnstile TEST key (always passes). Replaced with the real key at setup.
     "TURNSTILE_SITE_KEY": "1x00000000000000000000AA",
-    "SITE_URL": "https://www.iise-aub.workers.dev",
-    "ADMIN_URL": "https://admin.iise-aub.workers.dev",
+    "SITE_URL": "https://www.s-majbour.workers.dev",
+    "ADMIN_URL": "https://admin.s-majbour.workers.dev",
     // Filled in at setup (Cloudflare Zero Trust → Access application for the admin Worker).
     "ACCESS_TEAM_DOMAIN": "",
     "ACCESS_AUD": "",
@@ -38,16 +43,18 @@
         {
           "binding": "DB",
           "database_name": "iise-aub-db",
-          "database_id": "00000000-0000-0000-0000-000000000000",
+          "database_id": "1f390751-f80d-41a0-9f91-f76fa3f44d6c",
           "migrations_dir": "migrations"
         }
       ],
-      "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "iise-aub-media" }],
+      // Photos are stored in the database for now (no card needed). To use R2 later, add:
+  // "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "iise-aub-media" }],
       "vars": {
         "APP_ROLE": "admin",
+        "NOINDEX": "1",
         "TURNSTILE_SITE_KEY": "1x00000000000000000000AA",
-        "SITE_URL": "https://www.iise-aub.workers.dev",
-        "ADMIN_URL": "https://admin.iise-aub.workers.dev",
+        "SITE_URL": "https://www.s-majbour.workers.dev",
+        "ADMIN_URL": "https://admin.s-majbour.workers.dev",
         "ACCESS_TEAM_DOMAIN": "",
         "ACCESS_AUD": "",
         "BOOTSTRAP_ADMINS": ""

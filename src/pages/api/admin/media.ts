@@ -1,9 +1,9 @@
 // Photo upload for the editing panel (signed-in editors only; see middleware).
-// Receives WebP files already resized in the browser and stores them in R2 as <key>-<width>.webp.
+// Receives WebP files already resized in the browser and stores them as <key>-<width>.webp (R2 or the database).
 import type { APIRoute } from 'astro';
-import { env } from 'cloudflare:workers';
 import { db } from '../../../lib/db';
 import { logChange } from '../../../lib/admin';
+import { putFile } from '../../../lib/media-store';
 
 const MAX_BYTES = 4 * 1024 * 1024;
 const ALLOWED_WIDTHS = new Set([480, 960, 1600]);
@@ -25,8 +25,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const d = new Date();
   const key = `uploads/${d.getUTCFullYear()}/${crypto.randomUUID()}`;
-  await Promise.all(files.map((f, i) =>
-    env.MEDIA.put(`${key}-${widths[i]}.webp`, f.stream(), { httpMetadata: { contentType: 'image/webp' } })));
+  for (const [i, f] of files.entries()) await putFile(`${key}-${widths[i]}.webp`, await f.arrayBuffer(), 'image/webp');
 
   const row = await db().prepare('INSERT INTO media (r2_key, widths, width, height, created_by) VALUES (?, ?, ?, ?, ?) RETURNING id')
     .bind(key, JSON.stringify(widths), width || 0, height || 0, locals.user!.email).first<{ id: number }>();

@@ -24,7 +24,7 @@ const fullTitle = title === siteName ? title : `${title} · ${siteName}`;
 const ogImage = image ? new URL(image, site).href : new URL('/og-default.png', site).href;
 
 const nav = [
-  ['about', 'nav_about'], ['events', 'nav_events'], ['team', 'nav_team'],
+  ['about', 'nav_about'], ['events', 'nav_events'], ['team', 'nav_team'], ['alumni', 'nav_alumni'],
   ['history', 'nav_history'], ['game', 'nav_game'], ['contact', 'nav_contact'],
 ] as const;
 const isCurrent = (slug: string) => path.startsWith(`/${lang}/${slug}`);
@@ -169,6 +169,8 @@ const isCurrent = (slug: string) => path.startsWith(`/${lang}/${slug}`);
   .crn-chip-label { color: var(--grey-600); }
   .crn-chip-num { font-weight: 700; }
   @media (min-width: 640px) { .crn-chip { display: inline-flex; margin-inline-start: 8px; } }
+  /* Laptop widths: the full menu needs the room, so the chip steps aside (Join is always visible). */
+  @media (min-width: 1000px) and (max-width: 1239px) { .crn-chip { display: none; } }
 
   .nav { order: 4; margin-inline-start: auto; }
   .lang-switch { margin-inline-start: auto; }

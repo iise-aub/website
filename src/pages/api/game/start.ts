@@ -2,7 +2,7 @@
 // The map is only sent here, so nobody can study it before the clock starts.
 import type { APIRoute } from 'astro';
 import { loadSettings } from '../../../lib/db';
-import { cleanNickname, coffeeRun, signStart, weekId } from '../../../lib/game';
+import { DEPOTS, H, W, cleanNickname, depotDrop, signStart, weekId } from '../../../lib/game';
 import { PLAYER_COOKIE, createPlayer, getPlayer, myScore } from '../../../lib/game-db';
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
@@ -24,10 +24,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   const week = weekId();
   if (await myScore(week, player.id)) return json({ error: 'played' }, 409);
-  const puzzle = coffeeRun(week);
+  const puzzle = await depotDrop(week);
   return json({
     nickname: player.nickname,
     token: await signStart(week, player.id, Date.now()),
-    stops: puzzle.stops,
+    grid: puzzle.grid, w: W, h: H, depots: DEPOTS,
   });
 };

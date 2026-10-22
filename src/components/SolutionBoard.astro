@@ -1,0 +1,29 @@
+---
+// Last week's city with the best possible warehouse layout (shown only after that week is over).
+import { t, type Lang } from '../lib/i18n';
+interface Props { lang: Lang; grid: string[]; depots: number[]; best: number }
+const { lang, grid, depots, best } = Astro.props;
+const W = grid[0].length;
+const COLORS = ['#1a3668', '#2f7fd1', '#b45309'];
+const kind = (c: string) => (c === '.' ? 'land' : c === '~' ? 'river' : c === '=' ? 'bridge' : c === '#' ? 'building' : 'house');
+---
+<section class="solution" aria-labelledby="sol-h">
+  <h2 id="sol-h">{t(lang, 'gLastSolution')}</h2>
+  <p class="hint">{t(lang, 'gBestTotal')}: <strong>{best} {t(lang, 'gBlocks')}</strong></p>
+  <div class="mini" dir="ltr" style={`--w:${W};--h:${grid.length}`} role="img" aria-label={t(lang, 'gLastSolution')}>
+    {grid.flatMap((row, y) => [...row].map((c, x) => {
+      const d = depots.indexOf(y * W + x);
+      return <span class:list={['m', kind(c), d >= 0 && 'depot']} style={d >= 0 ? `--c:${COLORS[d]}` : undefined}>{c >= '1' && c <= '9' ? c : ''}</span>;
+    }))}
+  </div>
+</section>
+<style>
+  .solution { background: var(--white); border: 1px solid var(--steel-200); border-radius: var(--radius); padding: 18px; }
+  .solution h2 { font-size: 1.3rem; margin-bottom: 4px; }
+  .hint { margin: 0 0 10px; color: var(--grey-600); }
+  .mini { display: grid; grid-template-columns: repeat(var(--w), 1fr); grid-template-rows: repeat(var(--h), 1fr); aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 1px solid var(--steel-300); }
+  .m { display: grid; place-items: center; font-size: 0.6rem; font-weight: 800; box-shadow: inset 0 0 0 0.5px rgb(16 33 63 / 0.1); font-family: var(--font-latin); }
+  .land { background: #f3f6f9; } .river { background: #7fb0de; } .bridge { background: #a87c52; } .building { background: #48566f; }
+  .house { background: #fff; color: var(--navy-900); }
+  .depot { background: var(--c); }
+</style>

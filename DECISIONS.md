@@ -91,6 +91,40 @@ Format: date, decision, decided by, why.
 
 - **2026-10-22. History year strip shows every station at once, with no sideways scrolling.** Decided by Saad. On wide screens it spans the full width, stations share it equally, and long titles are shortened with "…" (full title on hover). On phones only the years show, wrapping to a second row if needed.
 
+- **2026-10-22. Cabinet photos.** Saad sent nine unnamed originals. Claude matched each one to its labelled slide in the Instagram "Meet the IISE Cabinet 2026-2027" post (same photoshoot), with necklaces reading "Clara" and "Maria" confirming the two pairs of shared first names. The photos are cropped to square head-and-shoulders (480 and 960 px WebP) and stored in `db/media/cabinet-2026/`. `npm run media:cabinet:local` / `media:cabinet:remote` loads them and links them to people (the same storage keys every time, from `manifest.json`).
+
+- **2026-10-22. Teams renamed (Saad):** PR & Outreach, Social Media, Events, IISE & Beyond, Technical Development, Coffee with IISE. **Descriptions are Claude's drafts** (Saad asked for "what you think they are"). The team should confirm or edit them in the panel (Teams). Stored in `db/update-teams-2026-10-22.sql`.
+- **2026-10-22. Weekly puzzle replaced: Coffee Run → "Depot Drop".** Saad found Coffee Run too easy and asked for something "creative and difficult like Enclose". He chose Depot Drop from three original concepts (the others were Bottleneck, a network-flow puzzle, and Line Balance, an assembly-line puzzle).
+  - **The puzzle:** an original facility-location (p-median) problem. A 10×10 city with a winding river, 1-2 bridges, buildings and 11-13 houses with 1-5 deliveries each. Place exactly 3 warehouses on empty squares. Each house is served by its nearest warehouse by real driving distance (square by square, bridges only, around buildings). Total = Σ deliveries × distance.
+  - **Score** = 1000 × best ÷ yours. The exact best answer is found on the server (all combinations, with pruning; checked against brute force).
+  - **Live total** and coloured delivery routes while playing; the best total stays hidden.
+  - **Last week's best layout** is shown on the puzzle page only after that week ends, so the answer can't be shared during the week.
+  - **Speed:** each week's city is solved once and stored in `game_weeks` (migration 0003). This keeps requests within the free plan's computing limit (about 2 ms on average; about 17 ms on a first cold run, which now happens once a week).
+  - It is an original puzzle in the spirit of Enclose (few moves, a huge number of options, a hidden best answer), not a copy of its rules, as the brief requires.
+  - Keyboard: arrow keys move around the board, Enter places or removes a warehouse; every square has a spoken label.
+
+- **2026-10-22. Team roles clarified by Saad:**
+  - **IISE & Beyond is the chapter's newsletter.** The brief's Phase 2 "recaps" (where "newsletter means these posts") should be planned with this team, possibly as an "IISE & Beyond" section of recap posts. To be decided when Phase 2 starts.
+  - **Technical Development develops and maintains this website and designs the chapter's presentations.** They are the intended owners of the site after handover, so the editing guide and maintenance guide should be written for them, and they are the natural cabinet admins/editors of the panel.
+
+- **2026-10-22. Temporary preview published on Saad's personal Cloudflare account.** Decided by Saad ("I don't have the IISE account details… I just want to show it to people now"). This departs from the brief's chapter-owned-accounts rule, so it is temporary.
+  - Live at **https://www.s-majbour.workers.dev** (account s.majbour@outlook.com; D1 database `iise-aub-db`, id 1f390751-…).
+  - **Before launch: move to the chapter's account** (iiseaub@outlook.com) with the domain: create the database there, copy the data (`wrangler d1 export` → import), redeploy, then delete the personal-account Worker and database. The subdomain was left as `s-majbour` so `iise-aub` stays free for the chapter.
+  - **Hidden preview:** `NOINDEX = "1"` sends `X-Robots-Tag: noindex, nofollow` on every page. Set to "0" on launch day.
+  - **Public site only;** the editing panel is not deployed yet (needs Cloudflare Access on the chapter account). Until then, Claude makes content changes and republishes.
+  - **Robot check uses Cloudflare's test keys** on the preview (the WhatsApp link is public on the Linktree anyway). Real Turnstile keys come with the chapter account.
+  - `GAME_SECRET` is a random value set as a Cloudflare secret and not stored anywhere else. If it is lost, only future weeks' cities change.
+- **2026-10-22. Photos stored in the database, not R2 (no payment card).** Decided by Saad ("No card"). Files are split into 40 KB parts in `media_blobs` (migration 0004); `src/lib/media-store.ts` uses R2 automatically if a `MEDIA` bucket is ever connected. Fine at our size: the 18 portrait files total about 0.5 MB, and D1's free plan allows 5 GB.
+
+- **2026-10-22. Alumni section moved forward from Phase 2.** Decided by Saad:
+  - **"Cabinet adds them"** (no public form for now): entries go in through Panel → Alumni.
+  - **"Stories only"** (no map yet; the brief's country map comes later).
+  - The page `/alumni` shows story cards: photo or initials, class year, job · company, country, industry, "How I got here", and LinkedIn only with opt-in. Instant filters for industry, country and company appear once there are more than 3 entries.
+  - **Consent is required:** an entry only appears when "they agreed to be on the website" is ticked (date recorded). Un-ticking hides it at once, which covers the brief's "alumni can ask to be removed".
+  - No invented alumni: the page shows "stories coming soon" until real entries are added.
+  - Country names come from a fixed list of codes, shown in English or Arabic automatically.
+  - "Alumni" added to the menu; between 1000 and 1239 px wide the CRN chip hides to make room (the Join button stays).
+
 ## Open questions for Saad
 
 These come from the "Still open" list in BRIEF.md. The history facts block launch, not the plan.

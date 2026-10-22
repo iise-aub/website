@@ -47,8 +47,8 @@ Send everything in English. Send Arabic too if you have it; otherwise Claude dra
 - ~~Past partners and current sponsors~~ Not needed: sponsor list removed by Saad (Oct 22, 2026).
 - [ ] Weekly puzzle: check the wording on the puzzle page and teaser (Panel → Page text → Weekly puzzle page), and decide whether there are prizes. If there are, players need verified accounts first (Phase 2). Owner: Saad
 - [ ] Coffee with IISE: one or two sentences on what the episodes are about (Members page). Owner: to assign
-- [ ] Each team's description (what the team does), and who leads it. Owner: to assign
-- [ ] When team (sub-cabinet) applications open, for the "Join a team" text. Owner: to assign
+- [ ] Confirm or edit the draft team descriptions (written by Claude, Oct 22 2026), and say who leads each team. Owner: to assign
+- [x] When team applications open: start of each fall semester (Saad, Oct 22, 2026). On the Team page.
 - [ ] Approve the Privacy note (draft written; check it matches what we actually do). Owner: Saad
 - [ ] IISE membership join page link (Why join page). Owner: to assign
 
@@ -57,8 +57,9 @@ All of these show in the editing panel under **Overview → Still to fill in**, 
 ### People and teams
 
 - [x] Cabinet 2026-27 names and positions, from the Instagram post "Meet the IISE Cabinet 2026-2027" (Sep 16, 2026). Saved in `content-templates/cabinet-2026-27.csv`. Names were read from the slides; each person should check their spelling.
-- [ ] For each cabinet member: a square photo with a clear face (the original, not the Instagram graphic with text on it), a 1-2 sentence bio, and LinkedIn (optional, only with their OK). Fill in `content-templates/cabinet-2026-27.csv`. Owner: to assign
-- [ ] Teams: the exact team names, what each team does, how to join, and who leads it. Owner: to assign
+- [x] Cabinet photos: 9 originals sent by Saad (Oct 22, 2026), cropped to square head-and-shoulders and on the Team page.
+- [ ] Each cabinet member: check their photo on the Team page, and send a 1-2 sentence bio and LinkedIn (optional, only with their OK). Fill in `content-templates/cabinet-2026-27.csv`. Owner: to assign
+- [x] Team names (Saad, Oct 22 2026): PR & Outreach, Social Media, Events, IISE & Beyond, Technical Development, Coffee with IISE.
 
 ### Events
 
@@ -91,3 +92,7 @@ Each milestone needs: English title and text, date (year, or full date if known)
 
 - [ ] The Gold report form the chapter submits to IISE, from the faculty advisor or last year's cabinet. Owner: to assign
 - [ ] Confirm the AUB student email domain (possibly @mail.aub.edu). Owner: to assign
+
+## Alumni (gather any time)
+
+- [ ] Alumni stories: name, graduation year, job and company, industry, country, a short "how I got here", optional LinkedIn, and **their agreement to be shown on the website**. Fill-in sheet: `content-templates/alumni-stories.csv`. Owner: to assign

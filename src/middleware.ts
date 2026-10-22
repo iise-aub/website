@@ -41,6 +41,8 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
     response = await next();
     if (adminWorker) response.headers.set('X-Robots-Tag', 'noindex, nofollow');
   }
+  // Hidden preview: ask search engines not to list the site (NOINDEX = "1" in wrangler.jsonc).
+  if (String(env.NOINDEX) === '1') response.headers.set('X-Robots-Tag', 'noindex, nofollow');
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('X-Frame-Options', 'DENY');

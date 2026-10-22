@@ -1,0 +1,166 @@
+---
+// Alumni: where IE took them, with "how I got here" stories. Entries are added by the cabinet in the panel,
+// and only shown when the alumnus agreed (consent date recorded). Filters work instantly in the browser.
+import Base from '../../layouts/Base.astro';
+import T from '../../components/T.astro';
+import PageHead from '../../components/PageHead.astro';
+import Rich from '../../components/Rich.astro';
+import Meridians from '../../components/Meridians.astro';
+import { isLang, pick, t } from '../../lib/i18n';
+import { INDUSTRIES, countryName, loadAlumniPage } from '../../lib/alumni';
+
+const { lang } = Astro.params;
+if (!isLang(lang)) return Astro.rewrite('/404');
+const { settings, text, alumni } = await loadAlumniPage();
+const tx = (block: string) => pick(text[block], 'text', lang);
+const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+const uniq = (xs: string[]) => [...new Set(xs.filter(Boolean))];
+const industries = uniq(alumni.map((a) => a.industry)).sort((a, b) => (INDUSTRIES[a]?.[lang] ?? a).localeCompare(INDUSTRIES[b]?.[lang] ?? b));
+const countries = uniq(alumni.map((a) => a.country)).sort((a, b) => countryName(a, lang).localeCompare(countryName(b, lang)));
+const companies = uniq(alumni.map((a) => a.company)).sort((a, b) => a.localeCompare(b));
+---
+<Base lang={lang} title={tx('title').text} description={tx('intro').text} settings={settings}>
+  <PageHead lang={lang} eyebrow={tx('eyebrow')} title={tx('title')} intro={tx('intro')} />
+
+  <section class="wrap block" aria-label={tx('title').text}>
+    {alumni.length === 0 ? (
+      <div class="empty">
+        <Meridians class="empty-globe" />
+        <T v={tx('empty')} page={lang} as="p" class="empty-title" />
+      </div>
+    ) : (
+      <div data-alumni>
+        {alumni.length > 3 && (
+          <form class="filters" data-filters aria-label={t(lang, 'aFilter')}>
+            {[
+              { key: 'industry', label: t(lang, 'aIndustry'), options: industries.map((v) => [v, INDUSTRIES[v]?.[lang] ?? v]) },
+              { key: 'country', label: t(lang, 'aCountry'), options: countries.map((v) => [v, countryName(v, lang)]) },
+              { key: 'company', label: t(lang, 'aCompany'), options: companies.map((v) => [v, v]) },
+            ].filter((f) => f.options.length > 1).map((f) => (
+              <label class="filter">
+                <span>{f.label}</span>
+                <select name={f.key}>
+                  <option value="">{t(lang, 'aAll')}</option>
+                  {f.options.map(([v, l]) => <option value={v}>{l}</option>)}
+                </select>
+              </label>
+            ))}
+            <button type="reset" class="btn btn-ghost">{t(lang, 'aClear')}</button>
+            <p class="count" aria-live="polite" data-count></p>
+          </form>
+        )}
+
+        <ul class="cards">
+          {alumni.map((a) => {
+            const name = pick(a, 'name', lang);
+            const job = pick(a, 'job_title', lang);
+            const story = pick(a, 'story', lang);
+            return (
+              <li class="card" data-industry={a.industry} data-country={a.country} data-company={a.company}>
+                <div class="head">
+                  <div class="avatar">
+                    {a.photo_key
+                      ? <img src={`/media/${a.photo_key}-480.webp`} alt="" width="96" height="96" loading="lazy" decoding="async" />
+                      : <span aria-hidden="true">{initials(a.name_en)}</span>}
+                  </div>
+                  <div>
+                    <h2 class="name"><T v={name} page={lang} /></h2>
+                    {a.grad_year && <p class="class">{t(lang, 'aClassOf')} {a.grad_year}</p>}
+                  </div>
+                </div>
+                <p class="role">
+                  {job.text && <T v={job} page={lang} />}
+                  {job.text && a.company && <span class="at"> · </span>}
+                  {a.company && <strong dir="auto">{a.company}</strong>}
+                </p>
+                <p class="tags">
+                  {a.country && <span class="tag">📍 {countryName(a.country, lang)}</span>}
+                  {a.industry && <span class="tag">{INDUSTRIES[a.industry]?.[lang] ?? a.industry}</span>}
+                </p>
+                {story.text && (
+                  <div class="story">
+                    <p class="story-label">{t(lang, 'aHowIGotHere')}</p>
+                    <Rich v={story} page={lang} />
+                  </div>
+                )}
+                {a.linkedin_opt_in && a.linkedin_url ? (
+                  <a class="linkedin" href={a.linkedin_url} target="_blank" rel="noopener">
+                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5ZM3 9.75h4V21H3V9.75Zm6.5 0h3.8v1.6h.06c.53-1 1.83-2.05 3.77-2.05 4.03 0 4.77 2.6 4.77 6V21h-4v-5c0-1.2 0-2.75-1.7-2.75-1.7 0-1.95 1.3-1.95 2.66V21h-4V9.75Z"/></svg>
+                    <span class="visually-hidden">{name.text} </span>{t(lang, 'linkedinOf')}
+                  </a>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+        <p class="none" data-none hidden>{t(lang, 'aNoMatch')}</p>
+      </div>
+    )}
+  </section>
+
+  <section class="wrap share-wrap" aria-label={t(lang, 'contact')}>
+    <div class="share">
+      <T v={tx('share')} page={lang} as="p" />
+      {settings.contact_email && <a class="btn btn-light" href={`mailto:${settings.contact_email}`}>{t(lang, 'emailUs')}</a>}
+    </div>
+  </section>
+</Base>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-alumni]').forEach((root) => {
+    const form = root.querySelector<HTMLFormElement>('[data-filters]');
+    if (!form) return;
+    const cards = [...root.querySelectorAll<HTMLElement>('.card')];
+    const none = root.querySelector<HTMLElement>('[data-none]')!;
+    const count = root.querySelector<HTMLElement>('[data-count]')!;
+    const apply = () => {
+      const f = Object.fromEntries(new FormData(form)) as Record<string, string>;
+      let shown = 0;
+      for (const c of cards) {
+        const ok = (!f.industry || c.dataset.industry === f.industry) && (!f.country || c.dataset.country === f.country) && (!f.company || c.dataset.company === f.company);
+        c.hidden = !ok;
+        if (ok) shown++;
+      }
+      none.hidden = shown > 0;
+      count.textContent = `${shown} / ${cards.length}`;
+    };
+    form.addEventListener('change', apply);
+    form.addEventListener('reset', () => setTimeout(apply));
+    apply();
+  });
+</script>
+
+<style>
+  .block { padding-block: 24px; }
+  .empty { position: relative; overflow: hidden; border: 1px dashed var(--steel-300); border-radius: var(--radius); padding: 48px 24px; text-align: center; background: var(--steel-50); }
+  .empty :global(.empty-globe) { width: 320px; left: 50%; top: 50%; transform: translate(-50%, -50%); color: var(--steel-200); }
+  .empty-title { position: relative; margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--navy-800); }
+
+  .filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin-bottom: 20px; }
+  .filter { display: grid; gap: 4px; font-weight: 600; font-size: 0.9rem; color: var(--navy-900); }
+  .filter select { font: inherit; font-weight: 400; min-height: 44px; padding: 8px 12px; border: 1px solid var(--steel-300); border-radius: 10px; background: var(--white); min-width: 170px; }
+  .count { margin: 0 0 10px; color: var(--grey-600); font-size: 0.9rem; }
+
+  .cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); }
+  .card { display: grid; gap: 10px; align-content: start; background: var(--white); border: 1px solid var(--steel-200); border-radius: var(--radius); padding: 20px; }
+  .head { display: flex; align-items: center; gap: 14px; }
+  .avatar { flex: none; width: 64px; height: 64px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--navy-800); color: #fff; font-weight: 800; font-family: var(--font-latin); }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .name { font-size: 1.3rem; margin: 0; }
+  .class { margin: 2px 0 0; color: var(--grey-600); font-size: 0.92rem; }
+  .role { margin: 0; color: var(--navy-900); }
+  .at { color: var(--grey-600); }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; }
+  .tag { font-size: 0.82rem; padding: 3px 10px; border-radius: 999px; background: var(--steel-100); color: var(--navy-900); }
+  .story { border-top: 1px solid var(--steel-100); padding-top: 10px; }
+  .story-label { margin: 0 0 6px; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--slate-600); }
+  :lang(ar) .story-label { letter-spacing: 0; text-transform: none; font-size: 0.95rem; }
+  .story :global(.rich) { font-size: 1rem; }
+  .linkedin { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; text-decoration: none; min-height: 32px; }
+  .none { color: var(--grey-600); }
+
+  .share-wrap { padding-block: 24px; }
+  .share { display: grid; gap: 16px; align-items: center; color: #fff; background: linear-gradient(135deg, var(--navy-800), var(--navy-950)); border-radius: calc(var(--radius) + 6px); padding: 28px; }
+  .share p { margin: 0; color: var(--steel-200); max-width: 60ch; font-size: 1.08rem; }
+  @media (min-width: 760px) { .share { grid-template-columns: 1fr auto; padding: 32px 40px; } }
+</style>

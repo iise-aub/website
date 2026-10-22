@@ -70,10 +70,22 @@ Current phase: **Phase 1 (Essentials)**. Started Oct 22, 2026 when Saad said "mo
     - Arabic at 360 px: board stays left-to-right, labels readable after spacing fix, no sideways scroll.
   - Test data removed. Type check clean; build passes.
 
+- 2026-10-22: Teams renamed with draft descriptions. **Weekly puzzle replaced with "Depot Drop":**
+  - Pieces: generator, exact solver, `game_weeks` cache (migration 0003), new board UI with live total and coloured routes, keyboard support, last week's best layout panel, new teaser art, updated text (EN/AR).
+  - Tested: a full round (747/1000, 79 vs 59 blocks); the solver matches brute force on 6 cities; Arabic at 375 px with no sideways scroll and 31 px squares.
+  - Type check clean; build passes. Test data removed.
+
+- 2026-10-22: **Preview published: https://www.s-majbour.workers.dev** (temporary, on Saad's personal account, hidden from search engines).
+  - Done: database created, migrations 0001-0004 applied, all content and photos loaded, secrets set.
+  - Checked live: 28 pages (en + ar) return 200; `/` and `/sponsors` redirect; `/admin` and unknown pages return 404; `.ics` works; 9/9 portraits load; WhatsApp link not in page; noindex header on; the puzzle generated and solved this week's city (request about 0.5 s). Test player removed.
+
+- 2026-10-22: Team "join" text set (positions open each fall). **Alumni section built and published:** `/alumni` page, Panel → Alumni, migration 0005. Tested locally: the consent rule hides entries without consent, the filters work, EN/AR labels are correct. Test entries removed. Live: /en/alumni and /ar/alumni return 200 and show "coming soon".
+
 ## In progress
 
 - Team: SETUP-GUIDE.md (Cloudflare and GitHub with iiseaub@outlook.com).
-- Saad: cabinet photos (to be sent).
+- Cabinet photos: done (Oct 22, 2026). Team page checked: all 9 portraits load, in both sizes.
+- Known local issue: the local Cloudflare runtime sometimes crashes on this Windows machine after about a minute (exit code 3221226505). Just restart `npm run dev`. It doesn't affect the deployed site.
 - Team: content listed in CONTENT-NEEDED.md (33 items show in the panel's "Still to fill in").
 
 ## Next
@@ -85,6 +97,7 @@ Current phase: **Phase 1 (Essentials)**. Started Oct 22, 2026 when Saad said "mo
    - Set up the Cloudflare Access application for the admin Worker, and set ACCESS_TEAM_DOMAIN, ACCESS_AUD and BOOTSTRAP_ADMINS. Add these steps to SETUP-GUIDE.md.
    - Test sign-in, and that `/admin` returns 404 on the public site.
    - Set secrets on both Workers: `GAME_SECRET` (long random text) and `TURNSTILE_SECRET_KEY`; create the real Turnstile widget and replace the test site key.
+   - Load the cabinet photos: `npm run media:cabinet:remote` (after seeding the remote database).
    - Deploy to `www.iise-aub.workers.dev` and switch the review to that preview link.
    - Verify the "(verify at setup)" items in PLAN.md.
    - Push the repo to the chapter GitHub organization.
