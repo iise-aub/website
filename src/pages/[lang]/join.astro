@@ -32,7 +32,7 @@ const aubUrl = settings.aub_registration_url;
         <div class="crn-globe" aria-hidden="true"><LogoGlobe /></div>
         <p class="crn-label">{t(lang, 'crnToEnter')}</p>
         <p class="crn-num" dir="ltr">{settings.crn || '—'}</p>
-        <p class="crn-term">{term.text ? <T v={term} page={lang} /> : <span class="ph-badge">{t(lang, 'termTbc')}</span>}</p>
+        {term.text && <p class="crn-term"><T v={term} page={lang} /></p>}
         {settings.crn && (
           <button type="button" class="btn btn-ghost copy-btn" data-copy={settings.crn} data-copied={t(lang, 'copied')} aria-label={t(lang, 'copyCrn')}>
             <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 3h11a2 2 0 0 1 2 2v11h-2V5H8V3Zm-3 4h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Zm0 2v10h10V9H5Z"/></svg>
