@@ -141,7 +141,8 @@ Format: date, decision, decided by, why.
 
 - **2026-10-23. Sub-cabinet edits go through GitHub pull requests that only Saad approves.** Requested by Saad ("they can do some edits… confirmed by me… I get a notification… approve or disapprove").
   - Sub-cabinet members get **Write** access to the repository. A branch ruleset on `main` requires a pull request, Code Owner approval (the `iise-aub/approvers` team, via `.github/CODEOWNERS`, so a handover changes team members, not files) and a passing `check` workflow (type check + build). Organization admins can bypass for urgent fixes.
-  - Accounts: chapter GitHub account `IISEAUB` (iiseaub@outlook.com), organization `iise-aub`, repository `iise-aub/website`. Saad uses the chapter account to approve.
+  - Accounts: chapter GitHub account `IISEAUB` (iiseaub@outlook.com), organization `iise-aub`, repository `iise-aub/website`. Saad uses the chapter account to approve. Saad's personal account `SaadMajbour` has Write access (used for the test pull request; can stay or be removed).
+  - Work Saad asks Claude to do in his own sessions is pushed to `main` with the chapter account's admin bypass after local type check and build, then published by Cloudflare. Sub-cabinet work always goes through pull requests. (Claude's working default, Oct 23 2026; Saad can ask for pull requests instead.)
   - Any tool is allowed (GitHub web editor, Claude Code, Codex, by hand). Shared rules for AI tools live in `AGENTS.md`; `CLAUDE.md` points to it. The how-to for members is `CONTRIBUTING.md`.
   - Cloudflare Workers Builds deploys `main` automatically and posts a preview link on every pull request. Previews use the live database.
   - Database changes in a pull request are applied to the live database by hand after merging (not automatic), so nothing changes the live data by surprise.

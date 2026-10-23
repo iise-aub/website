@@ -85,10 +85,10 @@ GitHub stores the website's code.
 
 5. Cloudflare dashboard → **Workers & Pages** → the `www` Worker → **Settings** → **Build** → **Connect** → **GitHub** (approve access for the organization, only the `website` repository).
    - Production branch: `main`. Build command: `npm run build`. Deploy command: `npx wrangler deploy`.
-   - Turn on **Builds for non-production branches**, with the command `npx wrangler versions upload`.
+   - **Preview command** (builds for other branches): `npx wrangler versions upload`. Don't use the suggested `npx wrangler preview`: it's a beta with its own separate secrets, so the puzzle would break in previews.
 6. Worker → **Settings** → **Domains & Routes**: make sure **Preview URLs** is enabled.
 
-Cloudflare then comments on each pull request with a preview link. Two things to know:
+Each pull request then gets a preview link: in its checks list, **Details** next to **Workers Builds: www** (Cloudflare doesn't post it as a comment). The link is `https://<branch-name>-www.<account>.workers.dev`. Two things to know:
 
 - Previews show the **live content** (same database), so they're for checking design and code, not for testing with fake data.
 - If a pull request changes the database (a new file in `migrations/` or `db/`), approve it, then ask Claude to apply it to the live database (`npm run db:migrate:remote`, or the new `db/update-…sql` file).

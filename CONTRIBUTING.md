@@ -55,7 +55,7 @@ Then work with Claude Code, Codex or by hand:
 ## After you open a pull request
 
 - **Automatic checks** run. A red ✗ means something is broken; open "Details" to see what, fix it, and push again.
-- **A preview link** appears as a comment after a minute or two. Open it on your phone, in English and Arabic.
+- **A preview link** is ready after a minute or two. In the pull request's checks list, click **Details** next to **Workers Builds: www**. The link looks like `https://<your-branch-name>-www.s-majbour.workers.dev` and always shows your newest version. Open it on your phone, in English and Arabic. It uses the live content, so don't test by adding fake data.
 - **Saad reviews it.** He may approve it, ask for changes (fix them on the same branch; the pull request updates by itself), or close it.
 
 ## Good pull requests
