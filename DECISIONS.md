@@ -139,6 +139,13 @@ Format: date, decision, decided by, why.
   - **History map:** IISE 1948 and AUB IE in August 2014 are now confirmed with sources; two new confirmed stations added (Engineering Management 1990, IEM department August 2015). The brief says the team confirms dates, so Saad should OK these.
   - Content in `db/update-research-2026-10-22.sql`; applied locally and on the live preview.
 
+- **2026-10-23. Sub-cabinet edits go through GitHub pull requests that only Saad approves.** Requested by Saad ("they can do some edits… confirmed by me… I get a notification… approve or disapprove").
+  - Sub-cabinet members get **Write** access to the repository. A branch ruleset on `main` requires a pull request, Code Owner approval (Saad, via `.github/CODEOWNERS`) and a passing `check` workflow (type check + build). Organization admins can bypass for urgent fixes.
+  - Any tool is allowed (GitHub web editor, Claude Code, Codex, by hand). Shared rules for AI tools live in `AGENTS.md`; `CLAUDE.md` points to it. The how-to for members is `CONTRIBUTING.md`.
+  - Cloudflare Workers Builds deploys `main` automatically and posts a preview link on every pull request. Previews use the live database.
+  - Database changes in a pull request are applied to the live database by hand after merging (not automatic), so nothing changes the live data by surprise.
+  - Everyday content (events, bios, page text) stays in the editing panel. An approval step in the panel was offered as a later option; not built yet.
+
 ## Open questions for Saad
 
 These come from the "Still open" list in BRIEF.md. The history facts block launch, not the plan.
@@ -153,3 +160,5 @@ These come from the "Still open" list in BRIEF.md. The history facts block launc
 6. Games: how they work. Needed before Phase 3.
 7. AUB's chapter page lists **aub-sc-ides@mail.aub.edu** as the chapter contact, not iiseaub@outlook.com. Should AUB update it, or should the site mention both?
 8. AUB's page also lists a Facebook page (facebook.com/iise.aub). Add it to the site's social links?
+9. GitHub repository: public (recommended; the approval rule is free) or private (needs a paid or education plan)?
+10. Should the editing panel also get an approval step (sub-cabinet edits wait for Saad), or is GitHub enough for now?
