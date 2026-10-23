@@ -147,18 +147,22 @@ const railLabel = (s: Milestone) => (s.is_placeholder ? t(lang, 'tbc') : String(
 
     // Jumping to a station stops just below the header and the sticky year rail (which wraps to
     // several lines on phones), so the photo is never hidden behind them.
-    function setJumpOffset() {
+    function jumpOffset() {
       const cs = getComputedStyle(rail);
-      const offset = (cs.position === 'sticky' ? parseFloat(cs.top) + rail.offsetHeight : 68) + 16;
+      return (cs.position === 'sticky' ? parseFloat(cs.top) + rail.offsetHeight : 68) + 16;
+    }
+    // Also used by the browser when the page opens on a #station link.
+    function setJumpOffset() {
+      const offset = jumpOffset();
       for (const s of stations) s.style.scrollMarginTop = `${offset}px`;
     }
     chips.forEach((chip) => chip.addEventListener('click', (e) => {
       const target = root.querySelector<HTMLElement>(chip.getAttribute('href')!);
       if (!target) return;
       e.preventDefault();
-      setJumpOffset();
       target.classList.add('in'); // show it whole on arrival, not mid-reveal
-      target.scrollIntoView({ behavior: reduce.matches ? 'auto' : 'smooth', block: 'start' });
+      const top = target.getBoundingClientRect().top + window.scrollY - jumpOffset();
+      window.scrollTo({ top, behavior: reduce.matches ? 'auto' : 'smooth' });
       history.replaceState(null, '', chip.getAttribute('href'));
     }));
 
