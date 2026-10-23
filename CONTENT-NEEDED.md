@@ -18,7 +18,7 @@ Send everything in English. Send Arabic too if you have it; otherwise Claude dra
 - [ ] Turn on "Approve new participants" in the WhatsApp group settings. Owner: to assign
 - [ ] Two people who will be the first cabinet admins (they manage editor access). Owner: Saad
 - [x] GitHub: chapter account `IISEAUB` (iiseaub@outlook.com, two-factor on), organization `iise-aub`, repository `iise-aub/website` (Oct 23, 2026). Project uploaded.
-- [ ] GitHub Step 3b in SETUP-GUIDE.md: `approvers` team, approval ruleset, notifications, Cloudflare connection. Owner: Saad
+- [x] GitHub Step 3b: `approvers` team, approval ruleset, notifications, Cloudflare connection; tested end to end (Oct 23, 2026).
 - [ ] Sub-cabinet members' GitHub usernames (to invite them with Write access). Owner: Saad
 
 ### Branding
@@ -32,7 +32,7 @@ Send everything in English. Send Arabic too if you have it; otherwise Claude dra
 
 ### Settings
 
-- [ ] Current CRN (currently 5029) and the exact term it applies to (for example "Fall 2026-27"). Owner: to assign
+- [ ] Optional: the term the CRN 5029 applies to (for example "Clubs Scholastic Year 2026-27"). The Join page now hides the term line when it's empty (Saad, Oct 23 2026), so this is no longer blocking. Owner: to assign
 - [x] AUB registration link (Saad, Oct 22, 2026).
 - [x] The exact registration steps (Saad, Oct 23, 2026): sign in → "Register for Classes" → term "Clubs Scholastic Year" → enter the CRN → Submit. On the Join page in English and Arabic.
 - [x] WhatsApp group invite link, Instagram, TikTok and the sub-cabinet application form (from linktr.ee/IISE.AUB, Oct 22, 2026).

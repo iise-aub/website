@@ -110,7 +110,7 @@ Current phase: **Phase 1 (Essentials)**. Started Oct 22, 2026 when Saad said "mo
    - Load the cabinet photos: `npm run media:cabinet:remote` (after seeding the remote database).
    - Deploy to `www.iise-aub.workers.dev` and switch the review to that preview link.
    - Verify the "(verify at setup)" items in PLAN.md.
-   - Push the repo to the chapter GitHub organization.
+   - ~~Push the repo to the chapter GitHub organization.~~ Done Oct 23, 2026 (github.com/iise-aub/website).
 3. Remaining pages and the rest of the panel. Checkpoint 2.
 4. Content, Arabic review, "how to edit" guide, non-programmer test.
 5. Checkpoint 3: launch review against "Definition of done". Lighthouse hasn't been run yet; it needs the deployed site.
