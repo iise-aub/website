@@ -6,3 +6,7 @@ dist/
 .env
 *.log
 db/media/cabinet-2026/load.sql
+
+# Original photos sent for the site (processed copies live in db/media)
+/*.jpeg
+/*.jpg

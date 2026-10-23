@@ -55,9 +55,45 @@ GitHub stores the website's code.
    - Contact email: the chapter email (iiseaub@outlook.com).
    - "This organization belongs to": **My personal account**.
 4. Invite the second admin's own GitHub account as an **Owner**: organization page → **People** → **Invite member** → role **Owner**.
-5. Don't create a repository. Claude sets that up in the next session.
+5. Create one **empty** repository: organization page → **Repositories** → **New repository**.
+   - Name: `website`.
+   - Visibility: **Public** (recommended: on a free plan, the approval rule in Step 3b works only on public repositories; no secrets are stored in the code). Private works too if the organization gets a paid or education plan.
+   - Don't add a README, .gitignore or licence (the project already has them).
+6. Tell Claude the organization and repository names. Claude uploads the project; Git opens a browser window once to sign in to GitHub.
 
-✅ Done when: the organization exists with two owners.
+✅ Done when: the organization exists with two owners and the empty `website` repository exists.
+
+---
+
+## Step 3b: Approval rule, notifications and live previews (after Claude uploads the project)
+
+**Only Saad's approval puts a change on the live site.**
+
+1. Put Saad's own GitHub username in `.github/CODEOWNERS` (Claude does this).
+2. Repository → **Settings** → **Rules** → **Rulesets** → **New ruleset** → **New branch ruleset**:
+   - Name: `protect main`. Enforcement: **Active**.
+   - Target branches: **Add target** → **Include default branch**.
+   - Tick **Restrict deletions** and **Block force pushes**.
+   - Tick **Require a pull request before merging**: required approvals **1**, tick **Dismiss stale pull request approvals when new commits are pushed** and **Require review from Code Owners**.
+   - Tick **Require status checks to pass** → **Add checks** → `check`.
+   - **Bypass list:** add **Organization admin** (so Saad can still publish urgent fixes himself; GitHub doesn't let anyone approve their own pull request).
+   - **Create**.
+3. **Invite the sub-cabinet:** Settings → **Collaborators and teams** → **Add people** → their GitHub usernames → role **Write**. Write lets them open pull requests; the rule above stops anything going live without Saad.
+4. **Notifications:** Saad, on github.com → profile picture → **Settings** → **Notifications**: keep **Email** on for "Participating, @mentions and custom" and watch the repository (**Watch** → **All Activity**). Install the **GitHub Mobile** app to review and approve from your phone.
+
+**Approved changes go live automatically, and every pull request gets a preview link:**
+
+5. Cloudflare dashboard → **Workers & Pages** → the `www` Worker → **Settings** → **Build** → **Connect** → **GitHub** (approve access for the organization, only the `website` repository).
+   - Production branch: `main`. Build command: `npm run build`. Deploy command: `npx wrangler deploy`.
+   - Turn on **Builds for non-production branches**, with the command `npx wrangler versions upload`.
+6. Worker → **Settings** → **Domains & Routes**: make sure **Preview URLs** is enabled.
+
+Cloudflare then comments on each pull request with a preview link. Two things to know:
+
+- Previews show the **live content** (same database), so they're for checking design and code, not for testing with fake data.
+- If a pull request changes the database (a new file in `migrations/` or `db/`), approve it, then ask Claude to apply it to the live database (`npm run db:migrate:remote`, or the new `db/update-…sql` file).
+
+✅ Done when: a test pull request shows the green `check`, a Cloudflare preview link, and can't be merged until Saad approves it.
 
 ---
 
