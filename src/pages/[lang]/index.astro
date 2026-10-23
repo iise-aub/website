@@ -23,7 +23,6 @@ const doors = [
   { key: 'new', href: `/${lang}/new-to-ie` },
   { key: 'careers', href: `/${lang}/fields` },
   { key: 'members', href: `/${lang}/members` },
-  { key: 'partners', href: `/${lang}/companies` },
 ];
 ---
 <Base lang={lang} title="IISE AUB" description={tx('hero_text').text} settings={settings}>
@@ -120,8 +119,7 @@ const doors = [
   /* Three doors */
   .doors { padding-block: 72px 0; }
   .door-list { list-style: none; margin: 28px 0 0; padding: 0; display: grid; gap: 14px; }
-  @media (min-width: 640px) { .door-list { grid-template-columns: repeat(2, 1fr); gap: 18px; } }
-  @media (min-width: 1100px) { .door-list { grid-template-columns: repeat(4, 1fr); } }
+  @media (min-width: 860px) { .door-list { grid-template-columns: repeat(3, 1fr); gap: 18px; } }
   .door {
     position: relative; display: grid; gap: 10px; align-content: start; height: 100%; padding: 26px 26px 76px;
     background: var(--white); border: 1px solid var(--steel-200); border-radius: var(--radius);
