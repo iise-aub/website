@@ -161,5 +161,5 @@ These come from the "Still open" list in BRIEF.md. The history facts block launc
 6. Games: how they work. Needed before Phase 3.
 7. AUB's chapter page lists **aub-sc-ides@mail.aub.edu** as the chapter contact, not iiseaub@outlook.com. Should AUB update it, or should the site mention both?
 8. AUB's page also lists a Facebook page (facebook.com/iise.aub). Add it to the site's social links?
-9. GitHub repository is **private for now** (Saad, Oct 23 2026). On the free plan GitHub won't enforce the approval ruleset on a private repository, so members could merge without Saad. Switch to public (recommended) or get a paid or education plan before inviting the sub-cabinet?
+9. ~~GitHub repository public or private?~~ Answered: **public** (Saad, Oct 23 2026), so the free plan enforces the approval rule.
 10. Should the editing panel also get an approval step (sub-cabinet edits wait for Saad), or is GitHub enough for now?
