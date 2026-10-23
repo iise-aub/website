@@ -34,7 +34,7 @@ Send everything in English. Send Arabic too if you have it; otherwise Claude dra
 
 - [ ] Current CRN (currently 5029) and the exact term it applies to (for example "Fall 2026-27"). Owner: to assign
 - [x] AUB registration link (Saad, Oct 22, 2026).
-- [ ] The exact steps students follow on AUB's registration system to register for the club (screenshots help). The Join page shows a draft until then. Owner: to assign
+- [x] The exact registration steps (Saad, Oct 23, 2026): sign in → "Register for Classes" → term "Clubs Scholastic Year" → enter the CRN → Submit. On the Join page in English and Arabic.
 - [x] WhatsApp group invite link, Instagram, TikTok and the sub-cabinet application form (from linktr.ee/IISE.AUB, Oct 22, 2026).
 - [x] Chapter contact email: iiseaub@outlook.com.
 - [ ] LinkedIn page link, or confirm "we don't have one" (there's none on the Linktree). Owner: to assign
