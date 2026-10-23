@@ -141,8 +141,26 @@ const railLabel = (s: Milestone) => (s.is_placeholder ? t(lang, 'tbc') : String(
     const beadGlow = svg.querySelector<SVGCircleElement>('.bead-glow')!;
     const stations = [...track.querySelectorAll<HTMLElement>('[data-station]')];
     const chips = [...root.querySelectorAll<HTMLAnchorElement>('[data-rail-chip]')];
+    const rail = root.querySelector<HTMLElement>('[data-rail]')!;
     let total = 0;
     let active = -1;
+
+    // Jumping to a station stops just below the header and the sticky year rail (which wraps to
+    // several lines on phones), so the photo is never hidden behind them.
+    function setJumpOffset() {
+      const cs = getComputedStyle(rail);
+      const offset = (cs.position === 'sticky' ? parseFloat(cs.top) + rail.offsetHeight : 68) + 16;
+      for (const s of stations) s.style.scrollMarginTop = `${offset}px`;
+    }
+    chips.forEach((chip) => chip.addEventListener('click', (e) => {
+      const target = root.querySelector<HTMLElement>(chip.getAttribute('href')!);
+      if (!target) return;
+      e.preventDefault();
+      setJumpOffset();
+      target.classList.add('in'); // show it whole on arrival, not mid-reveal
+      target.scrollIntoView({ behavior: reduce.matches ? 'auto' : 'smooth', block: 'start' });
+      history.replaceState(null, '', chip.getAttribute('href'));
+    }));
 
     // Reveal blocks as they arrive (once). Without JS or with reduced motion they are simply visible.
     const io = new IntersectionObserver((entries) => {
@@ -152,6 +170,7 @@ const railLabel = (s: Milestone) => (s.is_placeholder ? t(lang, 'tbc') : String(
 
     // Draw the road through the station nodes: vertical S-bends between each pair.
     function layout() {
+      setJumpOffset();
       const on = !reduce.matches;
       track.classList.toggle('has-road', on);
       if (!on) return;
