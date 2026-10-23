@@ -69,7 +69,7 @@ GitHub stores the website's code.
 
 **Only Saad's approval puts a change on the live site.**
 
-1. Put Saad's own GitHub username in `.github/CODEOWNERS` (Claude does this).
+1. Create the approvers team: organization page → **Teams** → **New team** → name `approvers`, visibility **Visible** → **Create team**. Add the chapter account (and later, whoever takes over Saad's role). Then repository → **Settings** → **Collaborators and teams** → **Add teams** → `approvers` → role **Maintain**. `.github/CODEOWNERS` already names this team.
 2. Repository → **Settings** → **Rules** → **Rulesets** → **New ruleset** → **New branch ruleset**:
    - Name: `protect main`. Enforcement: **Active**.
    - Target branches: **Add target** → **Include default branch**.

@@ -1,3 +1,3 @@
 # Every change needs approval from the chapter's approver (BRIEF.md: Saad Majbour, or whoever takes over his role).
-# When the role changes, replace the username below.
-* @SAAD-GITHUB-USERNAME
+# Approvers are the members of the "approvers" team in the iise-aub organization. At handover, change the team's members, not this file.
+* @iise-aub/approvers
