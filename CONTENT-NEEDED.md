@@ -17,8 +17,8 @@ Send everything in English. Send Arabic too if you have it; otherwise Claude dra
 - [ ] Later, **before Phase 2**: domain name choice, and the treasurer pays for it ($8.50 for the first year and $11.20 a year after for a .org, or $10.46 a year for a .com). Owner: Saad, treasurer (name to confirm)
 - [ ] Turn on "Approve new participants" in the WhatsApp group settings. Owner: to assign
 - [ ] Two people who will be the first cabinet admins (they manage editor access). Owner: Saad
-- [ ] GitHub: create the chapter organization and an empty `website` repository (SETUP-GUIDE.md step 3), then send Claude the names. Owner: Saad
-- [ ] Saad's own GitHub username (for the approval rule in `.github/CODEOWNERS`). Owner: Saad
+- [x] GitHub: chapter account `IISEAUB` (iiseaub@outlook.com, two-factor on), organization `iise-aub`, repository `iise-aub/website` (Oct 23, 2026). Project uploaded.
+- [ ] GitHub Step 3b in SETUP-GUIDE.md: `approvers` team, approval ruleset, notifications, Cloudflare connection. Owner: Saad
 - [ ] Sub-cabinet members' GitHub usernames (to invite them with Write access). Owner: Saad
 
 ### Branding
