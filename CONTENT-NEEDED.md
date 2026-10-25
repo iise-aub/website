@@ -34,7 +34,8 @@ Send everything in English. Send Arabic too if you have it; otherwise Claude dra
 
 - [ ] Optional: the term the CRN 5029 applies to (for example "Clubs Scholastic Year 2026-27"). The Join page now hides the term line when it's empty (Saad, Oct 23 2026), so this is no longer blocking. Owner: to assign
 - [x] AUB registration link (Saad, Oct 22, 2026).
-- [x] The exact registration steps (Saad, Oct 23, 2026): sign in → "Register for Classes" → term "Clubs Scholastic Year" → enter the CRN → Submit. On the Join page in English and Arabic.
+- [x] The exact registration steps: from Saad's illustrated guide (Oct 25, 2026): sign in → "Register for Classes" → term "Clubs 2026-2027" → Continue → "Enter CRNs" → CRN → "Add to Summary" → Submit. The PDF guide is linked on the Join page.
+- [ ] Each year: a new registration guide PDF when the clubs term or the CRN changes (Panel → Settings & links → Registration guide). Owner: Technical Development
 - [x] WhatsApp group invite link, Instagram, TikTok and the sub-cabinet application form (from linktr.ee/IISE.AUB, Oct 22, 2026).
 - [x] Chapter contact email: iiseaub@outlook.com.
 - [ ] LinkedIn page link, or confirm "we don't have one" (there's none on the Linktree). Owner: to assign
