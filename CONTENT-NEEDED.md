@@ -85,7 +85,8 @@ Each milestone needs: English title and text, date (year, or full date if known)
 - [x] Chapter milestones: 13 stations from the history research (Oct 25 2026), 7 on the homepage. Other moments in the research (football tournament, Lego Lean competition, AUS competition, vlog competition, Modern Mills visit, yearbook…) were left out on purpose to keep the map short; add them in the panel if wanted.
 
 **History photos still needed** (Oct 25 2026). The 9 photos on the map are Instagram thumbnails (about 300 px), so they look soft on large screens. Send originals (full size) where possible:
-- [ ] **No photo yet:** IISE founded, 1948 (homepage; an IISE archive photo needs IISE's permission, or use a photo of the IISE logo/certificate); AUB starts teaching IE, 2014 (homepage; e.g. an IEM department or Bechtel building photo); Engineering Management, 1990 (History page); IEM department created, 2015 (History page). Owner: to assign
+- [x] IISE founded, 1948: the original AIIE seal photo, sent by Saad (Oct 25 2026).
+- [ ] **No photo yet:** AUB starts teaching IE, 2014 (homepage; e.g. an IEM department or Bechtel building photo); Engineering Management, 1990 (History page); IEM department created, 2015 (History page). Owner: to assign
 - [ ] **Poster now, real photo better:** first event "The Gathering" 2015, Beirut clean-up 2020, Coffee with IISE 2022 (an episode still), IISE Chapters in MENA 2021, Pfizer competition 2024. Owner: to assign
 - [ ] **Full-size originals:** first field trip 2018, first IE graduates 2018, ten-year mural 2025, Society of the Year 2025. Owner: to assign
 - [ ] Confirm the people in these photos are OK with appearing on the site (they were already public on the chapter Instagram). Owner: to assign

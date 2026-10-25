@@ -1,5 +1,6 @@
 // Loads the history station photos (db/media/history-2026) into photo storage and links them to stations.
-// Photos come from the chapter's Instagram posts (via the history research, Oct 2026), made 4:3 without cropping.
+// Photos come from the chapter's Instagram posts (via the history research, Oct 2026), made 4:3 without cropping;
+// the 1948 AIIE seal photo was sent by Saad (Oct 25 2026).
 // Usage:  node scripts/seed-history-photos.mjs --local     (this computer)
 //         node scripts/seed-history-photos.mjs --remote    (the live site)
 //         add --r2 to put the files in an R2 bucket instead of the database (only if R2 is connected).
@@ -14,6 +15,7 @@ const dir = 'db/media/history-2026';
 const PART_SIZE = 40 * 1024; // must match src/lib/media-store.ts
 // photo slug → [station title (English), alt text EN, alt text AR]
 const stations = {
+  'iise-1948': ['IISE is founded', 'The original seal of the American Institute of Industrial Engineers, “Founded 1948”', 'الختم الأصلي للمعهد الأمريكي للمهندسين الصناعيين، «تأسّس عام 1948»'],
   'first-event': ['It all starts on Hostler Roof', 'Poster for The Gathering, the Industrial Engineering Society’s first event, on Hostler Roof', 'ملصق The Gathering، أولى فعاليات جمعية الهندسة الصناعية'],
   'field-trip': ['Our first field trip', 'Members in front of the Kassatly Chtaura factory in the Bekaa', 'الأعضاء أمام مصنع قساطلي شتورا في البقاع'],
   'first-graduates': ["AUB's first IE graduates", 'AUB’s first class of industrial engineers in front of the Bechtel Engineering Building', 'أول دفعة من مهندسي الصناعة أمام مبنى بكتل للهندسة'],

@@ -9,7 +9,7 @@ import Leaderboard from '../../components/Leaderboard.astro';
 import SolutionBoard from '../../components/SolutionBoard.astro';
 import { isLang, pick, t } from '../../lib/i18n';
 import { db, loadPage } from '../../lib/db';
-import { previousWeekId, weekBounds, weekId } from '../../lib/game';
+import { SPEED, isTimedWeek, previousWeekId, speedFactor, weekBounds, weekId } from '../../lib/game';
 import { PLAYER_COOKIE, getPlayer, myScore, termBoard, weekBoard, weekRank, winner } from '../../lib/game-db';
 
 const { lang } = Astro.params;
@@ -34,6 +34,9 @@ const msLeft = new Date(end).getTime() - Date.now();
 const daysLeft = Math.floor(msLeft / 864e5), hoursLeft = Math.floor((msLeft % 864e5) / 36e5);
 const fmt = (ms: number) => { const s = Math.round(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 const L = (k: Parameters<typeof t>[1]) => t(lang, k);
+const timed = isTimedWeek(week);
+const speed = timed ? JSON.stringify({ fullMs: SPEED.fullMs, decayMs: SPEED.decayMs, min: SPEED.min }) : undefined;
+const layoutPts = (m: { best: number; result: number }) => Math.min(1000, Math.round((1000 * m.best) / m.result));
 const labels = {
   taken: L('gTaken'), invalid: L('gInvalid'), error: L('gError'), weekEnded: L('gWeekEnded'),
   tapEmpty: L('gTapEmpty'), allPlaced: L('gAllPlaced'), land: L('gLand'), river: L('gRiver'), bridge: L('gBridge'),
@@ -58,12 +61,14 @@ const labels = {
             <div><dt>{L('gYourTotal')}</dt><dd>{mine.result} {L('gBlocks')}</dd></div>
             <div><dt>{L('gBestTotal')}</dt><dd>{mine.best} {L('gBlocks')}</dd></div>
             <div><dt>{L('gTime')}</dt><dd>{fmt(mine.duration_ms)}</dd></div>
+            {timed && <div><dt>{L('gLayout')}</dt><dd>{layoutPts(mine)}<span class="of">/1000</span></dd></div>}
+            {timed && <div><dt>{L('gSpeed')}</dt><dd dir="ltr">×{speedFactor(mine.duration_ms).toFixed(2)}</dd></div>}
             {rank && <div><dt>{L('gRank')}</dt><dd>#{rank.rank} {L('gOf')} {rank.players}</dd></div>}
           </dl>
           <p class="r-note">{L('gPlayed')}</p>
         </div>
       ) : (
-        <div class="game" data-game data-labels={JSON.stringify(labels)}>
+        <div class="game" data-game data-labels={JSON.stringify(labels)} data-speed={speed}>
           <div class="intro-panel" data-intro>
             <details class="howto" open>
               <summary>{L('gHowTo')}</summary>
@@ -87,8 +92,12 @@ const labels = {
             <div class="hud">
               <span class="hud-total"><span class="hud-label">{L('gTotal')}</span> <strong data-total>—</strong></span>
               <span class="hud-depots" aria-hidden="true" data-pips></span>
-              <span data-clock class="hud-clock">0:00</span>
+              <span class="hud-time">
+                <span data-clock class="hud-clock">0:00</span>
+                {timed && <span data-speed-now class="hud-speed" dir="ltr" title={L('gSpeedHint')}>×1.00</span>}
+              </span>
             </div>
+            {timed && <p class="hint speed-hint">{L('gSpeedHint')}</p>}
             <p class="hint status" data-status aria-live="polite"></p>
             <div class="board-wrap" dir="ltr">
               <div class="board" data-board role="grid" aria-label={tx('title').text}></div>
@@ -141,6 +150,10 @@ const labels = {
     const pips = root.querySelector<HTMLElement>('[data-pips]')!;
     const status = root.querySelector<HTMLElement>('[data-status]')!;
     const clock = root.querySelector<HTMLElement>('[data-clock]')!;
+    // Speed factor shown live (the server computes the real score from its own clock).
+    const speedNow = root.querySelector<HTMLElement>('[data-speed-now]');
+    const speed = root.dataset.speed ? (JSON.parse(root.dataset.speed) as { fullMs: number; decayMs: number; min: number }) : null;
+    const factor = (ms: number) => (!speed || ms <= speed.fullMs ? 1 : Math.max(speed.min, 1 - (ms - speed.fullMs) / speed.decayMs));
     const submit = root.querySelector<HTMLButtonElement>('[data-submit]')!;
     const playError = root.querySelector<HTMLElement>('[data-play-error]')!;
 
@@ -277,8 +290,13 @@ const labels = {
       build();
       started = Date.now();
       timer = window.setInterval(() => {
-        const s = Math.floor((Date.now() - started) / 1000);
+        const ms = Date.now() - started, s = Math.floor(ms / 1000);
         clock.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+        if (speedNow) {
+          const f = factor(ms);
+          speedNow.textContent = `×${f.toFixed(2)}`;
+          speedNow.classList.toggle('is-dropping', f < 1);
+        }
       }, 500);
       boardEl.scrollIntoView({ block: 'nearest' });
       cells[0]?.focus({ preventScroll: true });
@@ -322,6 +340,11 @@ const labels = {
   .hud-depots :global(.pip) { width: 14px; height: 14px; border-radius: 4px; border: 2px solid var(--c); background: transparent; }
   .hud-depots :global(.pip.on) { background: var(--c); }
   .hud-clock { color: var(--ink-soft); }
+  .hud-time { display: inline-flex; align-items: center; gap: 8px; }
+  .hud-speed { font-weight: 700; font-size: 0.85rem; padding: 2px 8px; border-radius: 999px; background: #dcfce7; color: #14532d; font-family: var(--font-latin); font-variant-numeric: tabular-nums; }
+  .hud-speed.is-dropping { background: #fef3c7; color: #78350f; }
+  .speed-hint { margin: 6px 0 0; font-size: 0.88rem; }
+  .r-facts .of { color: var(--grey-600); font-weight: 600; font-size: 0.85em; }
   .status { margin-bottom: 10px; min-height: 1.4em; }
 
   /* Board */
