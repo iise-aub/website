@@ -80,3 +80,6 @@ SELECT 'Ten years of IISE AUB', 'عشر سنوات من IISE AUB',
   'يرسم الطلاب جدارية ضخمة على قماش في الحرم الجامعي، مليئة برسائلهم، احتفالًا بالذكرى العاشرة للفرع.',
   2025, 4, 'chapter', 'Instagram (Apr 2025): https://www.instagram.com/p/DNYsKKBMOEi/', 1, 0, 1, 'Claude (history research)'
 WHERE NOT EXISTS (SELECT 1 FROM milestones WHERE title_en = 'Ten years of IISE AUB');
+
+-- Saad, Oct 25 2026: the Beirut clean-up stays on the History page only (homepage: 7 main moments).
+UPDATE milestones SET on_home = 0 WHERE title_en = 'Standing with Beirut';

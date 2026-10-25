@@ -28,7 +28,7 @@ Send everything in English. Send Arabic too if you have it; otherwise Claude dra
 - [x] IISE logo (PNG, shared by Saad Oct 22, 2026). Used in the header; a white version for the footer was made from it.
 - [ ] The IISE logo as **SVG** (sharper on all screens), plus the official white version, and **any IISE AUB chapter logo**, if the chapter has its own. Owner: to assign
 - [ ] Confirm IISE allows chapters to use the logo this way (header and footer of the chapter site). Owner: to assign
-- [ ] Photos for each history station (old chapter photos, award photos). Stations without one show a "Photo to come" panel. Owner: to assign
+- [ ] History station photos: see "History photos still needed" below (Oct 25 2026). Owner: to assign
 
 ### Settings
 
@@ -79,9 +79,16 @@ Each milestone needs: English title and text, date (year, or full date if known)
 
 - [x] When IISE was established worldwide: 1948 as AIIE (source: iise.org/history, checked Oct 22 2026).
 - [x] When AUB introduced industrial engineering: August 2014; plus Engineering Management 1990 and the IEM department August 2015 (source: AUB IEM history page, checked Oct 22 2026).
-- [ ] When IISE AUB was founded. Owner: to assign
-- [ ] Best Society award, 2024: exact award name and awarding body. Owner: to assign
-- [ ] Further chapter milestones (events, firsts, awards). Owner: to assign
+- [x] When IISE AUB was founded: 2015; first event Oct 8, 2015 as the Industrial Engineering Society (chapter Instagram; history research, Oct 25 2026). No exact founding day exists, so the map uses the first event.
+- [x] The award: Society of the Year at AUB 2024-25, plus the Community and Citizenship Award (Instagram, Aug 20 2025).
+- [ ] Confirm who gives Society of the Year (most likely AUB's Office of Student Affairs, at the Excellence in Student Life Award Ceremony). Owner: to assign
+- [x] Chapter milestones: 13 stations from the history research (Oct 25 2026), 7 on the homepage. Other moments in the research (football tournament, Lego Lean competition, AUS competition, vlog competition, Modern Mills visit, yearbook…) were left out on purpose to keep the map short; add them in the panel if wanted.
+
+**History photos still needed** (Oct 25 2026). The 9 photos on the map are Instagram thumbnails (about 300 px), so they look soft on large screens. Send originals (full size) where possible:
+- [ ] **No photo yet:** IISE founded, 1948 (homepage; an IISE archive photo needs IISE's permission, or use a photo of the IISE logo/certificate); AUB starts teaching IE, 2014 (homepage; e.g. an IEM department or Bechtel building photo); Engineering Management, 1990 (History page); IEM department created, 2015 (History page). Owner: to assign
+- [ ] **Poster now, real photo better:** first event "The Gathering" 2015, Beirut clean-up 2020, Coffee with IISE 2022 (an episode still), IISE Chapters in MENA 2021, Pfizer competition 2024. Owner: to assign
+- [ ] **Full-size originals:** first field trip 2018, first IE graduates 2018, ten-year mural 2025, Society of the Year 2025. Owner: to assign
+- [ ] Confirm the people in these photos are OK with appearing on the site (they were already public on the chapter Instagram). Owner: to assign
 
 ### Photos
 

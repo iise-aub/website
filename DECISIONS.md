@@ -144,6 +144,7 @@ Format: date, decision, decided by, why.
   - Accounts: chapter GitHub account `IISEAUB` (iiseaub@outlook.com), organization `iise-aub`, repository `iise-aub/website`. Saad uses the chapter account to approve. Saad's personal account `SaadMajbour` has Write access (used for the test pull request; can stay or be removed).
   - **2026-10-23. Homepage order:** the doors ("Where would you like to start?") come before the history map, and include "Where can IE take you?" as door 02 (Saad: careers matter most for new first and second years). The Companies door is removed from the homepage (Saad); the Companies page stays, linked in the footer.
   - **2026-10-25. Registration guide:** Saad's illustrated PDF is linked from the Join page. It names this year's term and CRN, so its link is a panel setting and a new PDF replaces it each year (old ones stay in `public/guides/` by year).
+  - **2026-10-25. History map size** (Saad): the homepage shows about 8 main moments; the History page shows more but under 15 (ideally fewer); story text short and neat. Each station has an "Also show it on the homepage" switch (migration 0007). Events marked "show on history map" appear on the History page only, so the homepage stays curated. Photos that aren't 4:3 are shown whole on a blurred background, never cropped. On phones the year bar is one swipeable row (laptops keep the full-width bar with no scrolling).
   - Work Saad asks Claude to do in his own sessions is pushed to `main` with the chapter account's admin bypass after local type check and build, then published by Cloudflare. Sub-cabinet work always goes through pull requests. (Claude's working default, Oct 23 2026; Saad can ask for pull requests instead.)
   - Any tool is allowed (GitHub web editor, Claude Code, Codex, by hand). Shared rules for AI tools live in `AGENTS.md`; `CLAUDE.md` points to it. The how-to for members is `CONTRIBUTING.md`.
   - Cloudflare Workers Builds deploys `main` automatically and posts a preview link on every pull request. Previews use the live database.
@@ -156,7 +157,7 @@ These come from the "Still open" list in BRIEF.md. The history facts block launc
 
 0. Domain name and ending (.org or .com). Deferred; needed before Phase 2.
 
-1. History facts: exact dates, wording and sources for IISE worldwide, AUB's introduction of IE, IISE AUB's founding, and the 2024 Best Society award (name and awarding body).
+1. ~~History facts~~ Answered by the history research (Oct 25 2026): founding 2015 (first event Oct 8, 2015), Society of the Year 2024-25. Still to confirm: who awards Society of the Year.
 2. AUB student email domain (possibly @mail.aub.edu). Needed by Phase 2.
 3. ~~Coffee with IISE: where episodes are published.~~ Answered: Instagram for now (Saad, Oct 25 2026).
 4. LinkedIn: does the chapter have a page?
