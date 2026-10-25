@@ -69,11 +69,10 @@ const guideUrl = settings.registration_guide_url;
           <p class="ph-badge">{t(lang, 'linkComing')}</p>
         )}
         {guideUrl && (
-          <a class="btn btn-ghost btn-lg go guide" href={guideUrl} target="_blank" rel="noopener">
-            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M6 2h8l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm7 1.5V9h5.5L13 3.5ZM8 13v2h8v-2H8Zm0 4v2h5v-2H8Z"/></svg>
-            {t(lang, 'regGuide')}
-            <span class="visually-hidden">{t(lang, 'newTab')}</span>
-          </a>
+          <p class="guide">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M6 2h8l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm7 1.5V9h5.5L13 3.5ZM8 13v2h8v-2H8Zm0 4v2h5v-2H8Z"/></svg>
+            <span>{t(lang, 'regGuideLead')} <a href={guideUrl} target="_blank" rel="noopener">{t(lang, 'regGuide')}<span class="visually-hidden"> {t(lang, 'newTab')}</span></a></span>
+          </p>
         )}
       </div>
     </div>
@@ -133,7 +132,9 @@ const guideUrl = settings.registration_guide_url;
   .ui-name { font-weight: 600; color: var(--navy-900); }
   .ui-name.latin { white-space: nowrap; font-family: var(--font-latin); }
   .go { width: 100%; }
-  .guide { margin-top: 10px; }
-  @media (min-width: 520px) { .go { width: auto; } .guide { margin-top: 0; margin-inline-start: 6px; } }
+  .guide { display: flex; align-items: flex-start; gap: 8px; margin: 16px 0 0; font-size: 0.95rem; color: var(--ink-soft); }
+  .guide svg { flex: none; margin-top: 3px; color: var(--steel-400); }
+  .guide a { color: var(--navy-800); font-weight: 600; text-underline-offset: 3px; }
+  @media (min-width: 520px) { .go { width: auto; } }
   .btn-lg { min-height: 54px; padding-inline: 1.6em; }
 </style>
