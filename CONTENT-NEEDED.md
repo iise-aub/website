@@ -46,7 +46,8 @@ Send everything in English. Send Arabic too if you have it; otherwise Claude dra
 - [ ] About the chapter: "what we do" list drafted (Oct 23 2026); check it, and say whether the faculty advisor wants to be named. Owner: to assign
 - [ ] Member benefits we actually offer (for "Why join"). Owner: to assign
 - [ ] The IE path at AUB: drafted from AUB's IEM history page (Oct 23 2026) on About and New to IE; someone should give it a quick check. Where graduates go is covered by the Careers in IE page. Owner: to assign
-- [ ] For the Companies page: why companies should work with us, and what we offer (for example talks, workshops, recruiting access). Owner: to assign
+- [x] Companies page: why work with us and what we offer (Saad, Oct 25 2026: social media exposure, brand recognition, engagement; AUB's 9,759 students from AUB's Facts and Figures, Oct 2025).
+- [ ] Optional, to strengthen the Companies page: our Instagram and TikTok follower counts and typical event attendance (only real numbers). Owner: to assign
 - ~~Past partners and current sponsors~~ Not needed: sponsor list removed by Saad (Oct 22, 2026).
 - [ ] Weekly puzzle: check the wording on the puzzle page and teaser (Panel → Page text → Weekly puzzle page), and decide whether there are prizes. If there are, players need verified accounts first (Phase 2). Owner: Saad
 - [ ] Coffee with IISE: one or two sentences on what the episodes are about (Members page). Owner: to assign
