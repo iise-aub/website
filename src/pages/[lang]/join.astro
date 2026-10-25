@@ -17,6 +17,7 @@ const term = pick({ term_en: settings.crn_term_en, term_ar: settings.crn_term_ar
 const stepsText = tx('steps');
 const steps = stepsText.text.split('\n').map((s) => s.trim()).filter(Boolean);
 const aubUrl = settings.aub_registration_url;
+const guideUrl = settings.registration_guide_url;
 ---
 <Base lang={lang} title={tx('eyebrow').text || t(lang, 'nav_join')} description={tx('intro').text} settings={settings}>
   <section class="join wrap">
@@ -56,6 +57,13 @@ const aubUrl = settings.aub_registration_url;
           </a>
         ) : (
           <p class="ph-badge">{t(lang, 'linkComing')}</p>
+        )}
+        {guideUrl && (
+          <a class="btn btn-ghost btn-lg go guide" href={guideUrl} target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M6 2h8l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm7 1.5V9h5.5L13 3.5ZM8 13v2h8v-2H8Zm0 4v2h5v-2H8Z"/></svg>
+            {t(lang, 'regGuide')}
+            <span class="visually-hidden">{t(lang, 'newTab')}</span>
+          </a>
         )}
       </div>
     </div>
@@ -113,6 +121,7 @@ const aubUrl = settings.aub_registration_url;
     background: var(--navy-800); color: #fff; font-weight: 700;
   }
   .go { width: 100%; }
-  @media (min-width: 520px) { .go { width: auto; } }
+  .guide { margin-top: 10px; }
+  @media (min-width: 520px) { .go { width: auto; } .guide { margin-top: 0; margin-inline-start: 6px; } }
   .btn-lg { min-height: 54px; padding-inline: 1.6em; }
 </style>

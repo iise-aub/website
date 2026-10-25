@@ -9,9 +9,10 @@ const load = async () => (await d.prepare('SELECT key, value, label FROM setting
 let settings = await load();
 const errors: Record<string, string> = {};
 
-const kind = (key: string) => key === 'contact_email' ? 'email' : key.endsWith('_url') ? 'url' : key === 'crn' ? 'crn' : 'text';
+// "link": a full https:// link, or a file on this site starting with "/" (e.g. the registration guide PDF).
+const kind = (key: string) => key === 'contact_email' ? 'email' : key === 'registration_guide_url' ? 'link' : key.endsWith('_url') ? 'url' : key === 'crn' ? 'crn' : 'text';
 const groups = [
-  { title: 'Club registration', hint: 'Shown on the Join page and in the header.', keys: ['crn', 'crn_term_en', 'crn_term_ar', 'aub_registration_url', 'iise_join_url'] },
+  { title: 'Club registration', hint: 'Shown on the Join page and in the header. The registration guide shows this year’s term and CRN: replace it when they change.', keys: ['crn', 'crn_term_en', 'crn_term_ar', 'aub_registration_url', 'registration_guide_url', 'iise_join_url'] },
   { title: 'Social media and contact', hint: 'Shown in the footer and on the Contact page. Leave a link empty to hide it.', keys: ['instagram_url', 'tiktok_url', 'linkedin_url', 'contact_email', 'linktree_url'] },
   { title: 'Members', hint: 'The WhatsApp link only appears after a visitor passes the “I’m not a robot” check.', keys: ['whatsapp_url', 'team_application_url', 'podcast_url'] },
 ];
@@ -23,6 +24,7 @@ if (Astro.request.method === 'POST') {
     const v = values[s.key];
     const k = kind(s.key);
     if (k === 'url' && !isUrlOrEmpty(v)) errors[s.key] = 'This must be a full link starting with https://';
+    if (k === 'link' && !isUrlOrEmpty(v) && !/^\/[^\s]+$/.test(v)) errors[s.key] = 'Use a full link starting with https://, or a file on this site starting with /';
     if (k === 'email' && v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) errors[s.key] = 'This doesn’t look like an email address.';
     if (k === 'crn' && !/^\d{3,6}$/.test(v)) errors[s.key] = 'The CRN is a number, e.g. 5029.';
   }
@@ -63,7 +65,7 @@ const byKey = Object.fromEntries(settings.map((s) => [s.key, s]));
                 type={t === 'url' ? 'url' : t === 'email' ? 'email' : 'text'}
                 inputmode={t === 'crn' ? 'numeric' : undefined}
                 dir={k.endsWith('_ar') ? 'rtl' : undefined} lang={k.endsWith('_ar') ? 'ar' : undefined}
-                placeholder={t === 'url' ? 'https://' : undefined}
+                placeholder={t === 'url' ? 'https://' : t === 'link' ? 'https://… or /guides/….pdf' : undefined}
                 aria-invalid={errors[k] ? 'true' : undefined} aria-describedby={errors[k] ? `e-${k}` : undefined} />
               {errors[k] && <p class="err" id={`e-${k}`}>{errors[k]}</p>}
             </div>
