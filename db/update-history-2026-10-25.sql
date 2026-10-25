@@ -91,3 +91,6 @@ UPDATE milestones SET updated_by = 'Claude (from Saad)',
   text_ar = 'تبدأ الجامعة الأمريكية في بيروت بتدريس الهندسة الصناعية للطلاب الجامعيين، وبعد عام تؤسّس دائرة الهندسة الصناعية والإدارة لتحتضن البرنامج.'
   WHERE title_en = 'AUB introduces industrial engineering';
 UPDATE milestones SET visible = 0 WHERE title_en = 'AUB creates the IEM department';
+
+-- Saad, Oct 25 2026: AUB's first IE graduates goes on the homepage too (8 homepage moments).
+UPDATE milestones SET on_home = 1 WHERE title_en = 'AUB''s first IE graduates';
