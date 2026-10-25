@@ -34,6 +34,7 @@ const arrow = lang === 'ar' ? '←' : '→';
             </div>
             <div class="person-text">
               <T v={pick(p, 'position', lang)} page={lang} as="p" class="position" />
+              <div class="person-more">
               <h3><T v={name} page={lang} /></h3>
               {bio.text && <T v={bio} page={lang} as="p" class="bio" />}
               {p.linkedin_opt_in && p.linkedin_url ? (
@@ -42,6 +43,7 @@ const arrow = lang === 'ar' ? '←' : '→';
                   <span class="visually-hidden">{name.text} </span>{t(lang, 'linkedinOf')}
                 </a>
               ) : null}
+              </div>
             </div>
           </li>
         );
@@ -96,6 +98,14 @@ const arrow = lang === 'ar' ? '←' : '→';
   .people { list-style: none; margin: 24px 0 0; padding: 0; display: grid; gap: 24px 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); }
   @media (min-width: 720px) { .people { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 28px 20px; } }
   .person { display: grid; gap: 14px; align-content: start; }
+  /* Cards in the same row share their row heights (photo, title, name), so a title that wraps to two lines
+     doesn't push one person's name lower than the others'. */
+  @supports (grid-template-rows: subgrid) {
+    .person { grid-row: span 3; grid-template-rows: subgrid; row-gap: 0; }
+    .person-text { display: contents; }
+    .person .avatar { margin-bottom: 14px; }
+    .person .position { align-self: end; }
+  }
   .avatar { aspect-ratio: 1; border-radius: var(--radius); overflow: hidden; background: var(--steel-100); }
   .avatar img { width: 100%; height: 100%; object-fit: cover; }
   .monogram {
