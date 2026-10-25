@@ -10,9 +10,9 @@ Open the term box, choose "Clubs" with the current year (for example "Clubs 2026
 Open the "Enter CRNs" tab (skip the search boxes).
 Type our CRN (shown on this page) and click "Add to Summary".
 Click "Submit" at the bottom right. When "IISE Society" shows a green "Registered", you''re in!',
-  text_ar = 'اضغط «انتقل إلى التسجيل في الجامعة» في الأسفل، وسجّل الدخول بحساب الجامعة، ثم اضغط «Register for Classes».
-افتح خانة الفصل واختر «Clubs» مع السنة الحالية (مثلًا «Clubs 2026-2027»)، ثم اضغط «Continue».
-افتح تبويب «Enter CRNs» (تجاهل خانات البحث).
-اكتب رقم CRN الخاص بنا (الظاهر في هذه الصفحة) واضغط «Add to Summary».
-اضغط «Submit» في أسفل اليمين. عندما يظهر «IISE Society» مع علامة «Registered» الخضراء، تكون قد انضممت!'
+  text_ar = 'اضغط «انتقل إلى التسجيل في الجامعة» في الأسفل، وسجّل الدخول بحساب الجامعة، ثم اضغط «⁨Register for Classes⁩».
+افتح خانة الفصل واختر «⁨Clubs⁩» مع السنة الحالية (مثلًا «⁨Clubs 2026-2027⁩»)، ثم اضغط «⁨Continue⁩».
+افتح تبويب «⁨Enter CRNs⁩» (تجاهل خانات البحث).
+اكتب رقم CRN الخاص بنا (الظاهر في هذه الصفحة) واضغط «⁨Add to Summary⁩».
+اضغط «⁨Submit⁩» في أسفل اليمين. عندما يظهر «⁨IISE Society⁩» مع علامة «⁨Registered⁩» الخضراء، تكون قد انضممت!'
   WHERE page = 'join' AND block = 'steps';

@@ -16,6 +16,14 @@ const ph = (block: string) => Boolean(text[block]?.needs_content);
 const term = pick({ term_en: settings.crn_term_en, term_ar: settings.crn_term_ar }, 'term', lang);
 const stepsText = tx('steps');
 const steps = stepsText.text.split('\n').map((s) => s.trim()).filter(Boolean);
+// Quoted button and menu names (e.g. "Register for Classes", «Submit») are kept whole and left-to-right,
+// so they read correctly inside Arabic sentences and never wrap mid-name.
+const stepParts = (step: string) => step.split(/(«[^»]*»|"[^"]*")/).filter(Boolean).map((part) => {
+  const m = part.match(/^([«"])([^»"]*)([»"])$/);
+  if (!m) return { text: part };
+  const name = m[2].replace(/[⁦-⁩]/g, '');
+  return { open: m[1], name, close: m[3], latin: /[A-Za-z]/.test(name) };
+});
 const aubUrl = settings.aub_registration_url;
 const guideUrl = settings.registration_guide_url;
 ---
@@ -47,7 +55,9 @@ const guideUrl = settings.registration_guide_url;
       <div class="steps-panel">
         <h2 class="steps-title">{t(lang, 'stepsTitle')} {ph('steps') && <span class="ph-badge">{t(lang, 'placeholder')}</span>}</h2>
         <ol class="steps" lang={stepsText.lang !== lang ? stepsText.lang : undefined} dir={stepsText.lang !== lang ? 'ltr' : undefined}>
-          {steps.map((s) => <li>{s}</li>)}
+          {steps.map((s) => (
+            <li><span>{stepParts(s).map((p) => p.text !== undefined ? p.text : <>{p.open}<bdi class:list={['ui-name', { latin: p.latin }]}>{p.name}</bdi>{p.close}</>)}</span></li>
+          ))}
         </ol>
         {aubUrl ? (
           <a class="btn btn-primary btn-lg go" href={aubUrl} target="_blank" rel="noopener">
@@ -120,6 +130,8 @@ const guideUrl = settings.registration_guide_url;
     content: counter(step); display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
     background: var(--navy-800); color: #fff; font-weight: 700;
   }
+  .ui-name { font-weight: 600; color: var(--navy-900); }
+  .ui-name.latin { white-space: nowrap; font-family: var(--font-latin); }
   .go { width: 100%; }
   .guide { margin-top: 10px; }
   @media (min-width: 520px) { .go { width: auto; } .guide { margin-top: 0; margin-inline-start: 6px; } }
