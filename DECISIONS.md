@@ -157,7 +157,7 @@ These come from the "Still open" list in BRIEF.md. The history facts block launc
 
 1. History facts: exact dates, wording and sources for IISE worldwide, AUB's introduction of IE, IISE AUB's founding, and the 2024 Best Society award (name and awarding body).
 2. AUB student email domain (possibly @mail.aub.edu). Needed by Phase 2.
-3. Coffee with IISE: where episodes are published.
+3. ~~Coffee with IISE: where episodes are published.~~ Answered: Instagram for now (Saad, Oct 25 2026).
 4. LinkedIn: does the chapter have a page?
 5. ~~Shared chapter email~~ Answered: iiseaub@outlook.com owns all accounts (Saad, Oct 22, 2026).
 6. Games: how they work. Needed before Phase 3.

@@ -38,7 +38,7 @@ Send everything in English. Send Arabic too if you have it; otherwise Claude dra
 - [x] WhatsApp group invite link, Instagram, TikTok and the sub-cabinet application form (from linktr.ee/IISE.AUB, Oct 22, 2026).
 - [x] Chapter contact email: iiseaub@outlook.com.
 - [ ] LinkedIn page link, or confirm "we don't have one" (there's none on the Linktree). Owner: to assign
-- [ ] Coffee with IISE: where episodes are published, with links. Owner: to assign
+- [x] Coffee with IISE episodes: on the chapter Instagram for now (Saad, Oct 25 2026); "Listen to the episodes" on the Members page links there. Update the podcast link in the panel if it moves.
 
 ### Page text (facts only the team knows)
 
