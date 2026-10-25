@@ -1,5 +1,5 @@
 ---
-// The full-page journey map (same stations as the homepage).
+// The full-page journey map: every station (the homepage shows only the main ones).
 import Base from '../../layouts/Base.astro';
 import JourneyMap from '../../components/JourneyMap.astro';
 import { isLang, pick } from '../../lib/i18n';
@@ -7,7 +7,7 @@ import { loadHome, loadPage } from '../../lib/db';
 
 const { lang } = Astro.params;
 if (!isLang(lang)) return Astro.rewrite('/404');
-const [{ stations }, { settings, text }] = await Promise.all([loadHome(lang), loadPage('history')]);
+const [{ stations }, { settings, text }] = await Promise.all([loadHome(lang, true), loadPage('history')]);
 const tx = (block: string) => pick(text[block], 'text', lang);
 ---
 <Base lang={lang} title={tx('title').text} description={tx('intro').text} settings={settings}>

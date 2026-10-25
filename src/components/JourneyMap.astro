@@ -19,8 +19,10 @@ interface Props {
   title: Localized;
   intro: Localized;
   headingLevel?: 'h1' | 'h2';
+  /** Link to the full History page (homepage only, where just the main stations show). */
+  moreHref?: string;
 }
-const { lang, stations, eyebrow, title, intro, headingLevel = 'h2' } = Astro.props;
+const { lang, stations, eyebrow, title, intro, headingLevel = 'h2', moreHref } = Astro.props;
 const Heading = headingLevel;
 const latestIndex = stations.length - 1;
 // A gentle, repeatable sway so the road winds rather than running straight.
@@ -122,7 +124,10 @@ const railLabel = (s: Milestone) => (s.is_placeholder ? t(lang, 'tbc') : String(
           <div class="station-text">
             <p class="station-tags"><span class="pill">{t(lang, 'todayStation')}</span></p>
             <h3>{t(lang, 'todayText')}</h3>
-            <a class="btn btn-primary" href={`/${lang}/join`}>{t(lang, 'nav_join')} <span class="arrow" aria-hidden="true">{lang === 'ar' ? '←' : '→'}</span></a>
+            <div class="today-actions">
+              <a class="btn btn-primary" href={`/${lang}/join`}>{t(lang, 'nav_join')} <span class="arrow" aria-hidden="true">{lang === 'ar' ? '←' : '→'}</span></a>
+              {moreHref && <a class="btn btn-ghost" href={moreHref}>{t(lang, 'fullHistory')}</a>}
+            </div>
           </div>
         </li>
       </ol>
@@ -345,8 +350,9 @@ const railLabel = (s: Milestone) => (s.is_placeholder ? t(lang, 'tbc') : String(
   :lang(ar) .station-cat { letter-spacing: 0; text-transform: none; font-size: 0.95rem; }
   .latest-tag { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #fff; background: var(--navy-800); border-radius: 999px; padding: 3px 10px; }
   :lang(ar) .latest-tag { letter-spacing: 0; text-transform: none; font-size: 0.85rem; }
-  .station-text h3 { margin-bottom: 12px; }
-  .station-body { color: var(--ink-soft); font-size: 1.05rem; max-width: 52ch; }
+  .station-text h3 { margin-bottom: 8px; font-size: clamp(1.25rem, 2.2vw, 1.55rem); line-height: 1.2; }
+  .station-body { color: var(--ink-soft); font-size: 1rem; line-height: 1.6; max-width: 46ch; margin: 0; }
+  .today-actions { display: flex; flex-wrap: wrap; gap: 10px; }
   .station-link { font-weight: 600; text-decoration: none; display: inline-flex; gap: 6px; align-items: center; }
   .station-link:hover { text-decoration: underline; }
 
@@ -374,7 +380,7 @@ const railLabel = (s: Milestone) => (s.is_placeholder ? t(lang, 'tbc') : String(
     .track { padding-top: 96px; }
     .has-road .station, .station {
       grid-template-columns: minmax(0, 1fr) 160px minmax(0, 1fr); gap: 0; align-items: center;
-      padding-inline-start: 0; margin-bottom: 128px;
+      padding-inline-start: 0; margin-bottom: 104px;
     }
     .station .station-media { grid-column: 1; grid-row: 1; }
     .station .station-text { grid-column: 3; grid-row: 1; }
@@ -385,7 +391,7 @@ const railLabel = (s: Milestone) => (s.is_placeholder ? t(lang, 'tbc') : String(
     .station-today, .has-road .station-today { grid-template-columns: 1fr; justify-items: center; text-align: center; padding-top: 72px; }
     .station-today .node { top: 0; }
     .station-today .station-text { grid-column: 1; display: grid; justify-items: center; }
-    .station-today .station-tags { justify-content: center; }
+    .station-today .station-tags, .today-actions { justify-content: center; }
     .stations::before { inset-inline-start: calc(50% - 1px); }
   }
 

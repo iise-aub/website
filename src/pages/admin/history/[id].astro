@@ -42,15 +42,15 @@ if (Astro.request.method === 'POST') {
   if (Object.keys(errors).length === 0) {
     const photo = postedPhoto;
     const fields = [values.title_en, values.title_ar, values.text_en, values.text_ar, year, month, day, values.category, values.source_note,
-      confirmedInput ? 0 : 1, checked(form, 'visible'), now(), by];
+      confirmedInput ? 0 : 1, checked(form, 'visible'), checked(form, 'on_home'), now(), by];
     let mid: number;
     if (m) {
       mid = m.id;
       await d.prepare(`UPDATE milestones SET title_en=?, title_ar=?, text_en=?, text_ar=?, year=?, month=?, day=?, category=?, source_note=?,
-        is_placeholder=?, visible=?, updated_at=?, updated_by=? WHERE id=?`).bind(...fields, m.id).run();
+        is_placeholder=?, visible=?, on_home=?, updated_at=?, updated_by=? WHERE id=?`).bind(...fields, m.id).run();
     } else {
       const row = await d.prepare(`INSERT INTO milestones (title_en, title_ar, text_en, text_ar, year, month, day, category, source_note,
-        is_placeholder, visible, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`).bind(...fields).first<{ id: number }>();
+        is_placeholder, visible, on_home, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`).bind(...fields).first<{ id: number }>();
       mid = row!.id;
     }
     await d.batch([
@@ -65,6 +65,7 @@ if (Astro.request.method === 'POST') {
 const v = (n: string, fallback: unknown = '') => (n in values ? values[n] : String(fallback ?? ''));
 const confirmed = confirmedInput ?? (m ? !m.is_placeholder : false);
 const visible = m ? Boolean(m.visible) : true;
+const onHome = m ? Boolean(m.on_home) : false;
 const photo = await getMedia(postedPhoto !== undefined ? postedPhoto : photoRow?.media_id ?? null);
 const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const cats = [['ie_world', 'IE worldwide'], ['aub', 'AUB'], ['chapter', 'Our chapter'], ['award', 'Award']];
@@ -123,6 +124,7 @@ const cats = [['ie_world', 'IE worldwide'], ['aub', 'AUB'], ['chapter', 'Our cha
     <section class="card form-grid">
       <h2>Visibility</h2>
       <label class="check"><input type="checkbox" name="visible" checked={visible} /> Show this station on the history map</label>
+      <label class="check"><input type="checkbox" name="on_home" checked={onHome} /> Also show it on the homepage (keep the homepage to about 8 main moments; the History page shows every station)</label>
     </section>
 
     <div class="form-actions">

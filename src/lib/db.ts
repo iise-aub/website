@@ -61,7 +61,8 @@ const nextEventSql = (d: D1Database, nowIso: string) =>
   ).bind(nowIso);
 
 // Stations: visible milestones, plus published past events flagged "show on history map".
-const journeySql = (d: D1Database, nowIso: string) =>
+// The homepage shows only the milestones marked "on the homepage"; the History page shows everything.
+const journeySql = (d: D1Database, nowIso: string, full: boolean) =>
   d.prepare(
     `SELECT * FROM (
      SELECT 'milestone' AS kind, ms.id, ms.title_en, ms.title_ar, ms.text_en, ms.text_ar,
@@ -69,25 +70,26 @@ const journeySql = (d: D1Database, nowIso: string) =>
             (SELECT m.r2_key FROM milestone_photos mp JOIN media m ON m.id = mp.media_id
               WHERE mp.milestone_id = ms.id ORDER BY mp.sort_order LIMIT 1) AS photo_key,
             NULL AS slug
-       FROM milestones ms WHERE ms.visible = 1
+       FROM milestones ms WHERE ms.visible = 1 AND (?2 = 1 OR ms.on_home = 1)
      UNION ALL
      SELECT 'event', e.id, e.title_en, e.title_ar, e.summary_en, e.summary_ar,
             CAST(strftime('%Y', e.starts_at) AS INTEGER), CAST(strftime('%m', e.starts_at) AS INTEGER),
             CAST(strftime('%d', e.starts_at) AS INTEGER), 'chapter', e.is_placeholder, 0,
             (SELECT m.r2_key FROM media m WHERE m.id = e.cover_media_id), e.slug
        FROM events e
-      WHERE e.status = 'published' AND e.show_on_history_map = 1 AND e.starts_at <= ?
+      WHERE ?2 = 1 AND e.status = 'published' AND e.show_on_history_map = 1 AND e.starts_at <= ?1
      ) ORDER BY year, COALESCE(month, 0), COALESCE(day, 0), sort_order`,
-  ).bind(nowIso);
+  ).bind(nowIso, full ? 1 : 0);
 
-export async function loadHome(lang: string) {
+/** Homepage data. `fullHistory` loads every station (History page) instead of the homepage selection. */
+export async function loadHome(lang: string, fullHistory = false) {
   const d = db();
   const now = new Date().toISOString();
   const [settings, text, next, journey] = await d.batch([
     settingsSql(d),
     pageTextSql(d, 'home'),
     nextEventSql(d, now),
-    journeySql(d, now),
+    journeySql(d, now, fullHistory),
   ]);
   return {
     settings: toSettings(settings.results as Row[]),

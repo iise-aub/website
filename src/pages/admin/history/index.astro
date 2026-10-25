@@ -3,7 +3,7 @@ import Admin from '../../../layouts/Admin.astro';
 import { db } from '../../../lib/db';
 import { logChange } from '../../../lib/admin';
 
-type M = { id: number; title_en: string; year: number; month: number | null; day: number | null; category: string; visible: number; is_placeholder: number; source_note: string; sort_order: number; photos: number };
+type M = { id: number; title_en: string; year: number; month: number | null; day: number | null; category: string; visible: number; on_home: number; is_placeholder: number; source_note: string; sort_order: number; photos: number };
 const d = db();
 const by = Astro.locals.user!.email;
 const list = async () => (await d.prepare(`SELECT m.*, (SELECT COUNT(*) FROM milestone_photos p WHERE p.milestone_id = m.id) AS photos
@@ -42,12 +42,15 @@ if (Astro.request.method === 'POST') {
 const catLabel: Record<string, string> = { ie_world: 'IE worldwide', aub: 'AUB', chapter: 'Chapter', award: 'Award' };
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const dateText = (m: M) => m.is_placeholder ? 'Date not confirmed' : [m.day, m.month ? months[m.month - 1] : null, m.year].filter(Boolean).join(' ');
+const shown = items.filter((m) => m.visible);
+const onHome = shown.filter((m) => m.on_home).length;
 ---
 <Admin title="History map" active="history">
   <div class="page-head">
     <div>
       <h1>History map</h1>
-      <p>Each station on the homepage journey. Stations are ordered by date automatically; use the arrows only for stations with the same date. Events ticked “Show on history map” also appear there.</p>
+      <p>Each station on the journey map. Stations are ordered by date automatically; use the arrows only for stations with the same date. Events ticked “Show on history map” also appear on the History page.</p>
+      <p><strong>{onHome}</strong> on the homepage (aim for about 8) · <strong>{shown.length}</strong> on the History page (aim for under 15).</p>
     </div>
     <a class="btn btn-primary" href="/admin/history/new">+ New station</a>
   </div>
@@ -64,7 +67,7 @@ const dateText = (m: M) => m.is_placeholder ? 'Date not confirmed' : [m.day, m.m
                 <span class="list-meta">{dateText(m)} · {catLabel[m.category]} · {m.photos ? `${m.photos} photo` : 'no photo'}</span>
               </div>
               {m.is_placeholder ? <span class="badge badge-warn">Not confirmed</span> : !m.source_note.trim() ? <span class="badge badge-warn">No source</span> : <span class="badge badge-ok">Confirmed</span>}
-              {!m.visible && <span class="badge badge-off">Hidden</span>}
+              {!m.visible ? <span class="badge badge-off">Hidden</span> : m.on_home ? <span class="badge badge-ok">Homepage</span> : null}
               <form method="post" class="list-actions">
                 <input type="hidden" name="id" value={m.id} />
                 <button class="icon-btn" name="_action" value="up" disabled={!canUp} aria-label={`Move “${m.title_en}” earlier`} title="Move earlier (same date only)">↑</button>
