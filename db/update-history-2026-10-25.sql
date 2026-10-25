@@ -83,3 +83,11 @@ WHERE NOT EXISTS (SELECT 1 FROM milestones WHERE title_en = 'Ten years of IISE A
 
 -- Saad, Oct 25 2026: the Beirut clean-up stays on the History page only (homepage: 7 main moments).
 UPDATE milestones SET on_home = 0 WHERE title_en = 'Standing with Beirut';
+
+-- Saad, Oct 25 2026: 2014 and 2015 were too similar. Keep 2014 (with the MSFEA building photo) and fold the
+-- 2015 department into its text; the 2015 station is hidden (not deleted, so it can come back from the panel).
+UPDATE milestones SET updated_by = 'Claude (from Saad)',
+  text_en = 'AUB begins teaching undergraduate industrial engineering. A year later it creates the Department of Industrial Engineering and Management (IEM) to house the program.',
+  text_ar = 'تبدأ الجامعة الأمريكية في بيروت بتدريس الهندسة الصناعية للطلاب الجامعيين، وبعد عام تؤسّس دائرة الهندسة الصناعية والإدارة لتحتضن البرنامج.'
+  WHERE title_en = 'AUB introduces industrial engineering';
+UPDATE milestones SET visible = 0 WHERE title_en = 'AUB creates the IEM department';

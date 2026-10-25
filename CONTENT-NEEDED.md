@@ -86,7 +86,8 @@ Each milestone needs: English title and text, date (year, or full date if known)
 
 **History photos still needed** (Oct 25 2026). The 9 photos on the map are Instagram thumbnails (about 300 px), so they look soft on large screens. Send originals (full size) where possible:
 - [x] IISE founded, 1948: the original AIIE seal photo, sent by Saad (Oct 25 2026).
-- [ ] **No photo yet:** AUB starts teaching IE, 2014 (homepage; e.g. an IEM department or Bechtel building photo); Engineering Management, 1990 (History page); IEM department created, 2015 (History page). Owner: to assign
+- [x] AUB starts teaching IE, 2014: MSFEA building photo, sent by Saad (Oct 25 2026). The 2015 IEM station was merged into it (hidden).
+- [ ] **No photo yet:** Engineering Management, 1990 (History page only). Owner: to assign
 - [ ] **Poster now, real photo better:** first event "The Gathering" 2015, Beirut clean-up 2020, Coffee with IISE 2022 (an episode still), IISE Chapters in MENA 2021, Pfizer competition 2024. Owner: to assign
 - [ ] **Full-size originals:** first field trip 2018, first IE graduates 2018, ten-year mural 2025, Society of the Year 2025. Owner: to assign
 - [ ] Confirm the people in these photos are OK with appearing on the site (they were already public on the chapter Instagram). Owner: to assign

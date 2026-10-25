@@ -16,6 +16,7 @@ const PART_SIZE = 40 * 1024; // must match src/lib/media-store.ts
 // photo slug → [station title (English), alt text EN, alt text AR]
 const stations = {
   'iise-1948': ['IISE is founded', 'The original seal of the American Institute of Industrial Engineers, “Founded 1948”', 'الختم الأصلي للمعهد الأمريكي للمهندسين الصناعيين، «تأسّس عام 1948»'],
+  'aub-ie-2014': ['AUB introduces industrial engineering', 'The Maroun Semaan Faculty of Engineering and Architecture building at AUB', 'مبنى كلية مارون سمعان للهندسة والعمارة في الجامعة الأمريكية في بيروت'],
   'first-event': ['It all starts on Hostler Roof', 'Poster for The Gathering, the Industrial Engineering Society’s first event, on Hostler Roof', 'ملصق The Gathering، أولى فعاليات جمعية الهندسة الصناعية'],
   'field-trip': ['Our first field trip', 'Members in front of the Kassatly Chtaura factory in the Bekaa', 'الأعضاء أمام مصنع قساطلي شتورا في البقاع'],
   'first-graduates': ["AUB's first IE graduates", 'AUB’s first class of industrial engineers in front of the Bechtel Engineering Building', 'أول دفعة من مهندسي الصناعة أمام مبنى بكتل للهندسة'],
