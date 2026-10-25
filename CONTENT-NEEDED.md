@@ -50,7 +50,7 @@ Send everything in English. Send Arabic too if you have it; otherwise Claude dra
 - [ ] Optional, to strengthen the Companies page: our Instagram and TikTok follower counts and typical event attendance (only real numbers). Owner: to assign
 - ~~Past partners and current sponsors~~ Not needed: sponsor list removed by Saad (Oct 22, 2026).
 - [ ] Weekly puzzle: check the wording on the puzzle page and teaser (Panel → Page text → Weekly puzzle page), and decide whether there are prizes. If there are, players need verified accounts first (Phase 2). Owner: Saad
-- [ ] Coffee with IISE: one or two sentences on what the episodes are about (Members page). Owner: to assign
+- [x] Coffee with IISE: a podcast with people working in the field (Saad, Oct 25 2026). On the Members and Team pages.
 - [ ] Confirm or edit the draft team descriptions (written by Claude, Oct 22 2026), and say who leads each team. Owner: to assign
 - [x] When team applications open: start of each fall semester (Saad, Oct 22, 2026). On the Team page.
 - [ ] Approve the Privacy note (draft written; check it matches what we actually do). Owner: Saad
