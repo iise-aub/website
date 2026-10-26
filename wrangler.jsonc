@@ -39,6 +39,8 @@
   "env": {
     "admin": {
       "name": "admin",
+      // The panel calls itself (approving an editor's change re-sends their form as the admin).
+      "services": [{ "binding": "SELF", "service": "admin" }],
       "d1_databases": [
         {
           "binding": "DB",

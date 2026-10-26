@@ -109,6 +109,21 @@ Saad passes these to Claude, who connects the site in the next session. Connecti
 
 ---
 
+## Editing panel: sign-in, approvals and updates
+
+The panel is at **https://admin.s-majbour.workers.dev** (its own Worker, `admin`).
+
+- **Sign-in is with passkeys** (Face ID, fingerprint or device PIN). There are no passwords. Cloudflare Access isn't used because it asks for a card.
+- **Adding someone:** Panel access → enter their email → Editor → you get a one-time link (works once, 3 days). Send it privately. They open it on the device they'll edit from and save a passkey.
+- **New phone or lost passkey:** Panel access → **Sign-in link** next to their name.
+- **Removing someone:** Panel access → Remove. This signs them out everywhere.
+- **Approvals:** only cabinet admins publish directly. Editors' changes appear under **Approvals** for an admin to approve or reject.
+- **If every admin is locked out:** a developer runs `node scripts/panel-invite.mjs <email> --remote --admin` to make a new admin link.
+- **Updating the panel:** the `admin` Worker isn't connected to GitHub yet, so code changes reach it with `npm run deploy:admin`. To make it automatic: Cloudflare → `admin` Worker → Settings → Builds → Connect → `iise-aub/website`, branch `main`, build command `npm run build:admin`, deploy command `npx wrangler deploy --env admin` (builds for other branches: off).
+- **Moving to the chapter domain later:** passkeys belong to the panel's address, so everyone needs a new sign-in link after the move.
+
+---
+
 ## Later, before Phase 2 (not now)
 
 - Buy the domain through Cloudflare (the treasurer pays: about $8.50 for the first year and $11.20 a year after for a .org).

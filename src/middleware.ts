@@ -1,12 +1,14 @@
 // Runs before every request.
 // - /admin and /api/admin: only on the admin Worker (or on localhost in development), and only for editors;
-//   people who are not signed in are sent to /admin/login (passkeys).
+//   people who are not signed in are sent to /admin/login (passkeys). Editors' form submissions are
+//   stored for the panel admin's approval instead of being applied (src/lib/approvals.ts).
 // - Same-origin check on every form POST (protects against cross-site form submissions).
 // - Basic security headers everywhere; the panel is never cached or indexed.
 import { defineMiddleware } from 'astro:middleware';
 import { env } from 'cloudflare:workers';
 import { isDevBypass, resolveAdmin } from './lib/auth';
 import { SESSION_COOKIE } from './lib/panel-auth';
+import { needsApproval, queueChange } from './lib/approvals';
 
 const isPanelPath = (p: string) => p === '/admin' || p.startsWith('/admin/') || p.startsWith('/api/admin/');
 // Signing in itself: open to anyone, but only on the panel's own address.
@@ -41,7 +43,7 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
     response.headers.set('Cache-Control', 'no-store');
     response.headers.set('X-Robots-Tag', 'noindex, nofollow');
   } else if (isPanelPath(pathname)) {
-    if (!adminWorker && !devBypass) return ctx.rewrite('/404');
+    if (!adminWorker && !devBypass && !isLocal(ctx.url)) return ctx.rewrite('/404');
     const auth = await resolveAdmin(ctx.request, devBypass, ctx.cookies.get(SESSION_COOKIE)?.value);
     if (!auth.ok && auth.status === 401) {
       if (pathname.startsWith('/api/')) return new Response(JSON.stringify({ error: 'signed-out' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
@@ -49,6 +51,11 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
       return ctx.redirect(`/admin/login${back}`, 302);
     }
     if (!auth.ok) return plainPage(auth.status, 'No access', auth.message);
+    // Editors' changes wait for the panel admin's approval instead of being applied.
+    if (needsApproval(auth.user, ctx.request.method, pathname)) {
+      const back = await queueChange(auth.user, pathname + ctx.url.search, await ctx.request.formData());
+      return ctx.redirect(`${back}?saved=${encodeURIComponent('Sent for approval. It goes live once the panel admin approves it.')}`, 303);
+    }
     ctx.locals.user = auth.user;
     response = await next();
     response.headers.set('Cache-Control', 'no-store');

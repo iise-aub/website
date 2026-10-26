@@ -1,8 +1,16 @@
 ---
 import Admin from '../../layouts/Admin.astro';
 import { db } from '../../lib/db';
+import { isCabinetAdmin } from '../../lib/auth';
+import { pendingCount, type PendingChange } from '../../lib/approvals';
 
 const d = db();
+const me = Astro.locals.user!;
+const isAdmin = isCabinetAdmin(me);
+// Approvals: the admin sees how many changes wait; editors see the status of their own recent changes.
+const waiting = isAdmin ? await pendingCount() : 0;
+const mine = isAdmin ? [] : (await d.prepare('SELECT * FROM pending_changes WHERE user_id = ? ORDER BY created_at DESC LIMIT 10').bind(me.id).all<PendingChange>()).results;
+const mineStatus = { pending: ['badge-draft', 'Waiting for approval'], approved: ['badge-ok', 'Approved · live'], rejected: ['badge-off', 'Not approved'], failed: ['badge-warn', 'Couldn’t be applied'] } as const;
 const nowIso = new Date().toISOString();
 const today = nowIso.slice(0, 10);
 const [upcoming, ms, msPh, msNoSource, textTodo, settingsEmpty, log, teamTodo, peopleTodo] = await d.batch([
@@ -34,9 +42,35 @@ const entityLabel: Record<string, string> = { events: 'event', milestones: 'hist
   <div class="page-head">
     <div>
       <h1>Hello 👋</h1>
-      <p>Everything on the website comes from here. Changes appear on the live site as soon as you save.</p>
+      <p>Everything on the website comes from here. {isAdmin
+        ? 'Your changes appear on the live site as soon as you save. Editors’ changes wait for your approval.'
+        : 'When you save, your change is sent to the panel admin; it goes live once approved.'}</p>
     </div>
   </div>
+
+  {isAdmin && waiting > 0 && (
+    <a class="card approvals-banner" href="/admin/approvals">
+      <strong>{waiting} {waiting === 1 ? 'change is' : 'changes are'} waiting for your approval</strong>
+      <span>Review →</span>
+    </a>
+  )}
+
+  {!isAdmin && mine.length > 0 && (
+    <section class="card">
+      <h2>Your recent changes</h2>
+      <ul class="list">
+        {mine.map((c) => (
+          <li>
+            <div class="list-main">
+              <span class="list-title">{[c.page, c.item].filter(Boolean).join(' → ') || c.path}</span>
+              <span class="list-meta">{when(c.created_at.endsWith('Z') ? c.created_at : `${c.created_at}Z`)}{c.note ? ` · Note: ${c.note}` : ''}</span>
+            </div>
+            <span class:list={['badge', mineStatus[c.status][0]]}>{mineStatus[c.status][1]}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
 
   <div class="stats">
     <a class="stat" href="/admin/events"><strong>{n(upcoming)}</strong><span>upcoming events</span></a>
@@ -85,3 +119,8 @@ const entityLabel: Record<string, string> = { events: 'event', milestones: 'hist
     )}
   </section>
 </Admin>
+
+<style>
+  .approvals-banner { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; align-items: center; text-decoration: none; color: #78350f; background: #fffbeb; border-color: #fcd34d; }
+  .approvals-banner:hover { border-color: #f59e0b; }
+</style>

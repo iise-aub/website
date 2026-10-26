@@ -12,7 +12,7 @@ Send everything in English. Send Arabic too if you have it; otherwise Claude dra
 
 - [x] Chapter email to own every account: iiseaub@outlook.com (Saad, Oct 22, 2026).
 - [ ] Secure iiseaub@outlook.com: two-step verification, and recovery options for two admins (SETUP-GUIDE.md step 1). Owner: to assign
-- [ ] The emails of the first two cabinet admins for the editing panel. Owner: Saad
+- [x] Panel access: Saad is the admin (passkey); first editors zth01, fmo05, kfs15 @mail.aub.edu (Oct 26 2026). Saad sends them sign-in links from Panel access.
 - [ ] A short name for the free web address (for example `iise-aub`). Owner: Saad
 - [ ] Later, **before Phase 2**: domain name choice, and the treasurer pays for it ($8.50 for the first year and $11.20 a year after for a .org, or $10.46 a year for a .com). Owner: Saad, treasurer (name to confirm)
 - [ ] Turn on "Approve new participants" in the WhatsApp group settings. Owner: to assign

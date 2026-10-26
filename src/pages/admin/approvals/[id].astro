@@ -1,0 +1,132 @@
+---
+// Review one editor change: what's on the site now vs what they want, field by field. Approve or reject.
+import Admin from '../../../layouts/Admin.astro';
+import { db } from '../../../lib/db';
+import { isCabinetAdmin } from '../../../lib/auth';
+import { field, logChange, now } from '../../../lib/admin';
+import { applyChange, diff, readLiveForms, type Fields, type PendingChange } from '../../../lib/approvals';
+
+const me = Astro.locals.user!;
+if (!isCabinetAdmin(me)) return Astro.redirect('/admin?saved=' + encodeURIComponent('Only the panel admin can approve changes'));
+
+const d = db();
+const id = Number(Astro.params.id);
+const change = Number.isInteger(id) ? await d.prepare('SELECT * FROM pending_changes WHERE id = ?').bind(id).first<PendingChange>() : null;
+if (!change) return Astro.redirect('/admin/approvals?saved=' + encodeURIComponent('That change no longer exists'));
+
+const origin = Astro.url.origin;
+const cookie = Astro.request.headers.get('Cookie') ?? '';
+const what = [change.page, change.item].filter(Boolean).join(' → ') || change.path;
+
+if (Astro.request.method === 'POST' && change.status === 'pending') {
+  const form = await Astro.request.formData();
+  if (field(form, '_action') === 'approve') {
+    const result = await applyChange(change, origin, cookie);
+    const note = result.ok ? '' : 'The panel didn’t accept these values (for example a required field is empty). Open the page and make the change yourself.';
+    await d.batch([
+      d.prepare('UPDATE pending_changes SET status = ?, note = ?, decided_by = ?, decided_at = ? WHERE id = ?')
+        .bind(result.ok ? 'approved' : 'failed', note, me.email, now(), change.id),
+      logChange(me.email, 'approvals', change.id, 'update', `${result.ok ? 'Approved' : 'Could not apply'} ${change.email}'s change: ${what}`),
+    ]);
+    return Astro.redirect('/admin/approvals?saved=' + encodeURIComponent(result.ok ? 'Approved and published' : 'Couldn’t apply it: see the note'), 303);
+  }
+  if (field(form, '_action') === 'reject') {
+    await d.batch([
+      d.prepare("UPDATE pending_changes SET status = 'rejected', note = ?, decided_by = ?, decided_at = ? WHERE id = ?")
+        .bind(field(form, 'note').slice(0, 300), me.email, now(), change.id),
+      logChange(me.email, 'approvals', change.id, 'update', `Rejected ${change.email}'s change: ${what}`),
+    ]);
+    return Astro.redirect('/admin/approvals?saved=' + encodeURIComponent('Rejected'), 303);
+  }
+}
+
+const fields = JSON.parse(change.fields) as Fields;
+const action = fields.find(([k]) => k === '_action')?.[1] ?? '';
+const isDelete = /delete|remove/i.test(action);
+const live = change.status === 'pending' ? diff(fields, await readLiveForms(change.path, origin, cookie)) : null;
+
+// Photos are stored as media ids: show them as thumbnails.
+const photoIds = (live?.rows ?? []).filter((r) => r.type === 'photo').flatMap((r) => [r.current, r.proposed]).filter((v) => /^\d+$/.test(v));
+const photos = new Map<string, string>();
+for (const pid of photoIds) {
+  const m = await d.prepare('SELECT r2_key FROM media WHERE id = ?').bind(Number(pid)).first<{ r2_key: string }>();
+  if (m) photos.set(pid, `/media/${m.r2_key}-480.webp`);
+}
+const when = (iso: string | null) => iso ? new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Beirut', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(iso.endsWith('Z') ? iso : `${iso}Z`)) : '';
+const pagePath = change.path.split('?')[0];
+---
+<Admin title={`Review: ${what}`} active="approvals">
+  <p><a href="/admin/approvals">← Approvals</a></p>
+  <div class="page-head">
+    <div>
+      <h1>{what}</h1>
+      <p>From <strong>{change.email}</strong> · {when(change.created_at)}{change.button ? <> · pressed “{change.button}”</> : null}</p>
+    </div>
+  </div>
+
+  {change.status !== 'pending' ? (
+    <section class="card">
+      <p><strong>{change.status === 'approved' ? 'Approved' : change.status === 'rejected' ? 'Rejected' : 'Couldn’t apply'}</strong> by {change.decided_by} · {when(change.decided_at)}</p>
+      {change.note && <p>{change.note}</p>}
+      <p><a href={pagePath}>Open the page</a></p>
+    </section>
+  ) : (
+    <>
+      {isDelete && <div class="err-box" role="alert">This is a request to <strong>{change.button || 'delete'}</strong>{change.item ? <> “{change.item}”</> : null}. Approving can’t be undone.</div>}
+      <section class="card">
+        <h2>{live && live.rows.length ? `What they changed (${live.rows.length})` : 'What they changed'}</h2>
+        {live && live.rows.length > 0 ? (
+          <div class="diff-wrap">
+            <table class="diff">
+              <thead><tr><th scope="col">Field</th><th scope="col">Now on the site</th><th scope="col">Their version</th></tr></thead>
+              <tbody>
+                {live.rows.map((r) => (
+                  <tr>
+                    <th scope="row">{r.label}</th>
+                    {[r.currentText, r.proposedText].map((v, i) => (
+                      <td class:list={[i === 0 ? 'old' : 'new']} dir={r.name.endsWith('_ar') ? 'rtl' : undefined} lang={r.name.endsWith('_ar') ? 'ar' : undefined}>
+                        {r.type === 'photo'
+                          ? (photos.get(i === 0 ? r.current : r.proposed) ? <img src={photos.get(i === 0 ? r.current : r.proposed)} alt="" width="160" /> : <em>No photo</em>)
+                          : v ? v : <em>(empty)</em>}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p class="hint">{isDelete || action ? 'No fields changed: this is the button action above.' : live && !live.matched ? 'The page has changed since they sent this, so it can’t be compared. Open the page to check.' : 'They saved without changing anything.'}</p>
+        )}
+        <p><a href={pagePath} target="_blank" rel="noopener">Open the page as it is now ↗</a></p>
+      </section>
+
+      <section class="card form-grid">
+        <h2>Decide</h2>
+        <form method="post" class="decide">
+          <button class="btn btn-primary" name="_action" value="approve" data-confirm="Publish this change now?">Approve and publish</button>
+        </form>
+        <form method="post" class="form-grid">
+          <div class="f">
+            <label for="note">Reject with a note (optional, they’ll see it)</label>
+            <input id="note" name="note" type="text" maxlength="300" placeholder="e.g. Please add the Arabic title" />
+          </div>
+          <div><button class="btn btn-ghost" name="_action" value="reject">Reject</button></div>
+        </form>
+      </section>
+    </>
+  )}
+</Admin>
+
+<style>
+  .diff-wrap { overflow-x: auto; }
+  .diff { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+  .diff th, .diff td { text-align: start; vertical-align: top; padding: 10px; border-bottom: 1px solid var(--steel-200); }
+  .diff thead th { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--grey-600); }
+  .diff tbody th { width: 22%; font-weight: 600; }
+  .diff td { width: 39%; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .diff td.old { background: #fef2f2; color: #7f1d1d; }
+  .diff td.new { background: #f0fdf4; color: #14532d; }
+  .diff img { display: block; border-radius: 8px; }
+  .decide { margin: 0; }
+</style>

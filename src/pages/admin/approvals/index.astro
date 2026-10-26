@@ -1,0 +1,59 @@
+---
+// Changes editors sent for approval. Only cabinet admins see this page.
+import Admin from '../../../layouts/Admin.astro';
+import { db } from '../../../lib/db';
+import { isCabinetAdmin } from '../../../lib/auth';
+import type { PendingChange } from '../../../lib/approvals';
+
+const me = Astro.locals.user!;
+if (!isCabinetAdmin(me)) return Astro.redirect('/admin?saved=' + encodeURIComponent('Only the panel admin can approve changes'));
+
+const d = db();
+const pending = (await d.prepare("SELECT * FROM pending_changes WHERE status = 'pending' ORDER BY created_at").all<PendingChange>()).results;
+const decided = (await d.prepare("SELECT * FROM pending_changes WHERE status != 'pending' ORDER BY decided_at DESC LIMIT 20").all<PendingChange>()).results;
+const when = (iso: string | null) => iso ? new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Beirut', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso.endsWith('Z') ? iso : `${iso}Z`)) : '';
+const what = (c: PendingChange) => [c.page, c.item].filter(Boolean).join(' → ') || c.path;
+const statusLabel = { approved: ['badge-ok', 'Approved'], rejected: ['badge-off', 'Rejected'], failed: ['badge-warn', 'Couldn’t apply'], pending: ['badge-draft', 'Waiting'] } as const;
+---
+<Admin title="Approvals" active="approvals">
+  <div class="page-head">
+    <div>
+      <h1>Approvals</h1>
+      <p>Editors’ changes wait here until you approve them. Nothing they change goes live before that. Your own changes are published directly.</p>
+    </div>
+  </div>
+
+  <section class="card">
+    <h2>Waiting for you ({pending.length})</h2>
+    {pending.length === 0 ? <p class="empty">Nothing to review. 🎉</p> : (
+      <ul class="list">
+        {pending.map((c) => (
+          <li>
+            <div class="list-main">
+              <a class="list-title" href={`/admin/approvals/${c.id}`}>{what(c)}</a>
+              <span class="list-meta">{c.email} · {when(c.created_at)}{c.button ? ` · “${c.button}”` : ''}</span>
+            </div>
+            <a class="btn btn-primary" href={`/admin/approvals/${c.id}`}>Review</a>
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+
+  {decided.length > 0 && (
+    <section class="card">
+      <h2>Recently decided</h2>
+      <ul class="list">
+        {decided.map((c) => (
+          <li>
+            <div class="list-main">
+              <a class="list-title" href={`/admin/approvals/${c.id}`}>{what(c)}</a>
+              <span class="list-meta">{c.email} · {when(c.decided_at)}{c.note ? ` · ${c.note}` : ''}</span>
+            </div>
+            <span class:list={['badge', statusLabel[c.status][0]]}>{statusLabel[c.status][1]}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+</Admin>

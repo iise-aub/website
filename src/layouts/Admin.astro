@@ -6,14 +6,18 @@ import '../styles/global.css';
 import '../styles/admin.css';
 import { env } from 'cloudflare:workers';
 import { isCabinetAdmin } from '../lib/auth';
+import { pendingCount } from '../lib/approvals';
 
 interface Props { title: string; active: string }
 const { title, active } = Astro.props;
 const user = Astro.locals.user!;
 const siteUrl = env.APP_ROLE === 'admin' ? String(env.SITE_URL) : '/';
 const flash = Astro.url.searchParams.get('saved');
+const admin = isCabinetAdmin(user);
+const waiting = admin ? await pendingCount() : 0;
 const nav = [
   { href: '/admin', key: 'overview', label: 'Overview' },
+  ...(admin ? [{ href: '/admin/approvals', key: 'approvals', label: waiting ? `Approvals (${waiting})` : 'Approvals' }] : []),
   { href: '/admin/events', key: 'events', label: 'Events' },
   { href: '/admin/history', key: 'history', label: 'History map' },
   { href: '/admin/people', key: 'people', label: 'Cabinet & people' },
@@ -23,7 +27,7 @@ const nav = [
   { href: '/admin/game', key: 'game', label: 'Weekly puzzle' },
   { href: '/admin/text', key: 'text', label: 'Page text' },
   { href: '/admin/settings', key: 'settings', label: 'Settings & links' },
-  ...(isCabinetAdmin(user) ? [{ href: '/admin/access', key: 'access', label: 'Panel access' }] : []),
+  ...(admin ? [{ href: '/admin/access', key: 'access', label: 'Panel access' }] : []),
 ];
 ---
 <!doctype html>
@@ -61,6 +65,20 @@ const nav = [
       // Ask before deleting; warn before leaving a form with unsaved changes.
       document.querySelectorAll<HTMLElement>('[data-confirm]').forEach((el) =>
         el.addEventListener('click', (e) => { if (!confirm(el.dataset.confirm!)) e.preventDefault(); }));
+      // Label every saved form with its page, list item and button, so changes waiting for approval
+      // are easy to recognise in the review list.
+      document.querySelectorAll<HTMLFormElement>('form[method="post" i]').forEach((form) =>
+        form.addEventListener('submit', (e) => {
+          const add = (name: string, value: string) => {
+            form.querySelector(`input[name="${name}"]`)?.remove();
+            const input = Object.assign(document.createElement('input'), { type: 'hidden', name, value: value.trim().slice(0, 200) });
+            form.appendChild(input);
+          };
+          const btn = (e as SubmitEvent).submitter as HTMLButtonElement | null;
+          add('_review_page', document.title.replace(/ · IISE AUB panel$/, ''));
+          add('_review_item', form.closest('li')?.querySelector('.list-title')?.textContent ?? '');
+          add('_review_button', btn?.textContent ?? '');
+        }));
       document.querySelectorAll<HTMLFormElement>('form[data-guard]').forEach((form) => {
         let dirty = false;
         form.addEventListener('input', () => (dirty = true));
