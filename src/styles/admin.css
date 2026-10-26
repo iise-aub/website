@@ -32,6 +32,8 @@
   .panel-side-foot { display: block; margin-top: auto; padding: 0 8px; font-size: 0.85rem; color: var(--grey-600); }
   .panel-viewsite { display: inline-block; font-weight: 600; margin-bottom: 14px; }
   .panel-user { margin: 0; overflow-wrap: anywhere; }
+  .panel-signout { margin-top: 8px; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; opacity: 0.85; }
+  .panel-signout:hover { opacity: 1; }
   .panel-main { padding: 36px 40px 96px; }
 }
 

@@ -1,12 +1,18 @@
 // Runs before every request.
-// - /admin and /api/admin: only on the admin Worker (or on localhost in development), and only for editors.
+// - /admin and /api/admin: only on the admin Worker (or on localhost in development), and only for editors;
+//   people who are not signed in are sent to /admin/login (passkeys).
 // - Same-origin check on every form POST (protects against cross-site form submissions).
 // - Basic security headers everywhere; the panel is never cached or indexed.
 import { defineMiddleware } from 'astro:middleware';
 import { env } from 'cloudflare:workers';
 import { isDevBypass, resolveAdmin } from './lib/auth';
+import { SESSION_COOKIE } from './lib/panel-auth';
 
 const isPanelPath = (p: string) => p === '/admin' || p.startsWith('/admin/') || p.startsWith('/api/admin/');
+// Signing in itself: open to anyone, but only on the panel's own address.
+const isSignInPath = (p: string) => p === '/admin/login' || p.startsWith('/admin/invite/') || p.startsWith('/api/auth/');
+
+const isLocal = (url: URL) => ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
 
 function plainPage(status: number, title: string, message: string) {
   const html = `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -29,10 +35,20 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
   if (adminWorker && pathname === '/') return ctx.redirect('/admin', 302);
 
   let response: Response;
-  if (isPanelPath(pathname)) {
+  if (isSignInPath(pathname)) {
+    if (!adminWorker && !isLocal(ctx.url)) return ctx.rewrite('/404');
+    response = await next();
+    response.headers.set('Cache-Control', 'no-store');
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+  } else if (isPanelPath(pathname)) {
     if (!adminWorker && !devBypass) return ctx.rewrite('/404');
-    const auth = await resolveAdmin(ctx.request, devBypass);
-    if (!auth.ok) return plainPage(auth.status, auth.status === 503 ? 'Not set up yet' : 'No access', auth.message);
+    const auth = await resolveAdmin(ctx.request, devBypass, ctx.cookies.get(SESSION_COOKIE)?.value);
+    if (!auth.ok && auth.status === 401) {
+      if (pathname.startsWith('/api/')) return new Response(JSON.stringify({ error: 'signed-out' }), { status: 401, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+      const back = pathname === '/admin' ? '' : `?next=${encodeURIComponent(pathname + ctx.url.search)}`;
+      return ctx.redirect(`/admin/login${back}`, 302);
+    }
+    if (!auth.ok) return plainPage(auth.status, 'No access', auth.message);
     ctx.locals.user = auth.user;
     response = await next();
     response.headers.set('Cache-Control', 'no-store');

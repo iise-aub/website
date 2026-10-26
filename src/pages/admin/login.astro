@@ -1,0 +1,49 @@
+---
+// Panel sign-in: one button; the browser offers the passkey saved for this panel (Face ID, fingerprint or PIN).
+import PanelSignIn from '../../layouts/PanelSignIn.astro';
+import { SESSION_COOKIE, sessionUser } from '../../lib/panel-auth';
+
+// Already signed in? Go straight to the panel.
+if (await sessionUser(Astro.cookies.get(SESSION_COOKIE)?.value)) return Astro.redirect('/admin', 302);
+const next = Astro.url.searchParams.get('next') ?? '';
+const safeNext = next.startsWith('/admin') && !next.startsWith('//') ? next : '/admin';
+const signedOut = Astro.url.searchParams.has('signed_out');
+---
+<PanelSignIn title="Sign in">
+  <h1>Sign in</h1>
+  <p class="lead">Use the passkey you saved on this phone or computer.</p>
+  <button class="btn btn-primary btn-lg" type="button" data-signin data-next={safeNext}>Sign in with passkey</button>
+  <p class:list={['msg', { ok: signedOut }]} data-msg role="status">{signedOut ? 'You’re signed out.' : ''}</p>
+  <p class="small">No passkey yet, or using a new device? Ask the panel admin for a sign-in link.</p>
+</PanelSignIn>
+
+<script>
+  import { startAuthentication, browserSupportsWebAuthn, type PublicKeyCredentialRequestOptionsJSON } from '@simplewebauthn/browser';
+
+  const btn = document.querySelector<HTMLButtonElement>('[data-signin]')!;
+  const msg = document.querySelector<HTMLElement>('[data-msg]')!;
+  const say = (text: string, ok = false) => { msg.textContent = text; msg.classList.toggle('err', !ok); msg.classList.toggle('ok', ok); };
+  const errors: Record<string, string> = {
+    unknown: 'This passkey isn’t registered for the panel. Ask the admin for a new sign-in link.',
+    'no-access': 'Your panel access was removed. Ask the panel admin if this is a mistake.',
+    expired: 'That took too long. Please try again.',
+  };
+
+  if (!browserSupportsWebAuthn()) { btn.disabled = true; say('This browser doesn’t support passkeys. Try Safari, Chrome or Edge.'); }
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true; say('');
+    try {
+      const optionsJSON = (await (await fetch('/api/auth/login-options', { method: 'POST' })).json()) as PublicKeyCredentialRequestOptionsJSON;
+      const response = await startAuthentication({ optionsJSON });
+      const res = await fetch('/api/auth/login-verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(response) });
+      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+      if (res.ok && data.ok) { say('Signed in…', true); location.href = btn.dataset.next || '/admin'; return; }
+      say(errors[data.error ?? ''] ?? 'Sign-in didn’t work. Please try again.');
+    } catch (e) {
+      // Cancelled or no passkey chosen.
+      say((e as Error)?.name === 'NotAllowedError' ? 'Sign-in was cancelled. Try again when you’re ready.' : 'Sign-in didn’t work. Please try again.');
+    }
+    btn.disabled = false;
+  });
+</script>

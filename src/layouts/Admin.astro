@@ -50,6 +50,7 @@ const nav = [
       <div class="panel-side-foot">
         <a class="panel-viewsite" href={siteUrl} target="_blank" rel="noopener">View the live site ↗</a>
         <p class="panel-user">Signed in as<br /><strong>{user.email}</strong></p>
+        <form method="post" action="/api/auth/logout"><button class="panel-signout" type="submit">Sign out</button></form>
       </div>
     </aside>
     <main id="panel-main" class="panel-main">

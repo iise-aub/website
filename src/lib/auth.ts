@@ -1,14 +1,16 @@
 // Who is using the editing panel, and are they allowed to?
 //
-// Production: the admin Worker sits behind Cloudflare Access. Access signs every request with a
-// JWT (header "Cf-Access-Jwt-Assertion"); we verify its signature, audience, issuer and expiry
-// before trusting the email inside. Anything missing or invalid is refused (fail closed).
+// Production: people sign in with a passkey (src/lib/panel-auth.ts), which gives them a session cookie.
+// If the panel is ever put behind Cloudflare Access instead (ACCESS_TEAM_DOMAIN and ACCESS_AUD set),
+// Access's signed JWT (header "Cf-Access-Jwt-Assertion") is accepted too; we verify its signature,
+// audience, issuer and expiry before trusting the email inside. Anything missing or invalid is refused.
 // Local development: DEV_ADMIN_EMAIL (in .dev.vars) signs you in, only on localhost.
 //
 // Being signed in is not enough: the email must hold the "editor" or "cabinet_admin" role in our
-// own users table. Cabinet admins manage those roles in the panel (People & access).
+// own users table. Cabinet admins manage those roles in the panel (Panel access).
 import { env } from 'cloudflare:workers';
 import { db } from './db';
+import { sessionUser } from './panel-auth';
 
 export type Role = 'editor' | 'cabinet' | 'cabinet_admin' | 'member' | 'alumni' | 'sponsor' | 'treasurer';
 export interface AdminUser { id: number; email: string; roles: Role[] }
@@ -22,19 +24,22 @@ export function isDevBypass(url: URL): boolean {
   return Boolean(env.DEV_ADMIN_EMAIL) && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
 }
 
-export async function resolveAdmin(request: Request, devBypass: boolean): Promise<AuthResult> {
+export async function resolveAdmin(request: Request, devBypass: boolean, sessionToken?: string): Promise<AuthResult> {
   let email: string;
+  const session = devBypass ? null : await sessionUser(sessionToken);
+  const team = String(env.ACCESS_TEAM_DOMAIN || '');
+  const aud = String(env.ACCESS_AUD || '');
+  const accessToken = request.headers.get('Cf-Access-Jwt-Assertion');
   if (devBypass) {
     email = String(env.DEV_ADMIN_EMAIL).toLowerCase();
-  } else {
-    const team = String(env.ACCESS_TEAM_DOMAIN || '');
-    const aud = String(env.ACCESS_AUD || '');
-    if (!team || !aud) return { ok: false, status: 503, message: 'Sign-in is not set up yet. See SETUP-GUIDE.md.' };
-    const token = request.headers.get('Cf-Access-Jwt-Assertion');
-    if (!token) return { ok: false, status: 401, message: 'Please sign in through Cloudflare Access.' };
-    const claims = await verifyAccessJwt(token, team, aud);
+  } else if (session) {
+    email = session.email.toLowerCase();
+  } else if (team && aud && accessToken) {
+    const claims = await verifyAccessJwt(accessToken, team, aud);
     if (!claims?.email) return { ok: false, status: 401, message: 'Your sign-in could not be verified. Please sign in again.' };
     email = String(claims.email).toLowerCase();
+  } else {
+    return { ok: false, status: 401, message: 'Please sign in.' };
   }
 
   const d = db();

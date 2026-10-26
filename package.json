@@ -11,6 +11,7 @@
     "db:migrate:remote": "wrangler d1 migrations apply iise-aub-db --remote",
     "db:seed:local": "wrangler d1 execute iise-aub-db --local --file=db/seed-placeholders.sql && wrangler d1 execute iise-aub-db --local --file=db/seed-team.sql && wrangler d1 execute iise-aub-db --local --file=db/seed-pages.sql && wrangler d1 execute iise-aub-db --local --file=db/seed-game.sql && wrangler d1 execute iise-aub-db --local --file=db/update-teams-2026-10-22.sql && wrangler d1 execute iise-aub-db --local --file=db/update-game-depot-drop.sql && wrangler d1 execute iise-aub-db --local --file=db/update-team-join-2026-10-22.sql && wrangler d1 execute iise-aub-db --local --file=db/update-research-2026-10-22.sql && wrangler d1 execute iise-aub-db --local --file=db/update-home-careers-door-2026-10-23.sql && wrangler d1 execute iise-aub-db --local --file=db/update-home-no-companies-door-2026-10-23.sql && wrangler d1 execute iise-aub-db --local --file=db/update-join-steps-2026-10-23.sql && wrangler d1 execute iise-aub-db --local --file=db/update-companies-offer-2026-10-25.sql && wrangler d1 execute iise-aub-db --local --file=db/update-coffee-podcast-2026-10-25.sql && wrangler d1 execute iise-aub-db --local --file=db/update-podcast-link-2026-10-25.sql && wrangler d1 execute iise-aub-db --local --file=db/update-join-guide-2026-10-25.sql && wrangler d1 execute iise-aub-db --local --file=db/update-history-2026-10-25.sql && wrangler d1 execute iise-aub-db --local --file=db/update-game-speed-2026-10-25.sql",
     "deploy": "astro build && wrangler deploy",
+    "build:admin": "cross-env CLOUDFLARE_ENV=admin astro build",
     "deploy:admin": "cross-env CLOUDFLARE_ENV=admin astro build && wrangler deploy --env admin",
     "media:cabinet:local": "node scripts/seed-cabinet-photos.mjs --local",
     "media:cabinet:remote": "node scripts/seed-cabinet-photos.mjs --remote",
@@ -21,6 +22,8 @@
     "@astrojs/cloudflare": "^14.4.2",
     "@fontsource-variable/noto-sans-arabic": "^5.3.0",
     "@fontsource-variable/source-sans-3": "^5.3.1",
+    "@simplewebauthn/browser": "^13.3.0",
+    "@simplewebauthn/server": "^13.3.3",
     "astro": "^7.4.2"
   },
   "devDependencies": {

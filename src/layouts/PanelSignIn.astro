@@ -1,0 +1,40 @@
+---
+// Small standalone layout for the panel's sign-in pages (login and invite), shown before anyone is signed in.
+import '@fontsource-variable/source-sans-3/wght.css';
+import '../styles/global.css';
+import '../styles/admin.css';
+
+interface Props { title: string }
+const { title } = Astro.props;
+---
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} · IISE AUB panel</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body class="panel signin-body">
+    <main class="signin">
+      <img class="signin-logo" src="/brand/iise-logo.png" width="536" height="186" alt="IISE" />
+      <p class="signin-eyebrow">Editing panel</p>
+      <slot />
+    </main>
+  </body>
+</html>
+
+<style>
+  .signin-body { min-height: 100vh; display: grid; place-items: center; background: var(--steel-50); padding: 24px 16px; }
+  .signin { width: min(100%, 420px); background: var(--white); border: 1px solid var(--steel-200); border-radius: 16px; padding: 32px 28px; box-shadow: var(--shadow); }
+  .signin-logo { width: 150px; height: auto; display: block; }
+  .signin-eyebrow { margin: 10px 0 18px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--slate-600); }
+  .signin :global(h1) { font-size: 1.6rem; margin: 0 0 10px; }
+  .signin :global(.lead) { color: var(--ink-soft); margin: 0 0 22px; }
+  .signin :global(.btn) { width: 100%; justify-content: center; }
+  .signin :global(.msg) { margin: 14px 0 0; min-height: 1.5em; font-size: 0.95rem; }
+  .signin :global(.msg.err) { color: #b42318; }
+  .signin :global(.msg.ok) { color: #14532d; }
+  .signin :global(.small) { margin: 22px 0 0; font-size: 0.88rem; color: var(--grey-600); }
+</style>

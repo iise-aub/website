@@ -1,0 +1,54 @@
+---
+// One-time invite link: the person saves a passkey for the panel on this device, then they're signed in.
+import PanelSignIn from '../../../layouts/PanelSignIn.astro';
+import { findInvite } from '../../../lib/panel-auth';
+
+const token = Astro.params.token ?? '';
+const invite = await findInvite(token);
+---
+<PanelSignIn title="Set up your sign-in">
+  {invite ? (
+    <>
+      <h1>Set up your sign-in</h1>
+      <p class="lead">You’re invited to edit the IISE AUB website as <strong>{invite.email}</strong>. Save a passkey on this device: your phone or computer will ask for Face ID, your fingerprint or its PIN. No password needed.</p>
+      <button class="btn btn-primary btn-lg" type="button" data-register data-token={token}>Create my passkey</button>
+      <p class="msg" data-msg role="status"></p>
+      <p class="small">This link works once and expires in 3 days. Use it on the device you’ll edit from; to add another device later, ask for a new link.</p>
+    </>
+  ) : (
+    <>
+      <h1>This link doesn’t work</h1>
+      <p class="lead">It was already used, or it expired. Ask the panel admin for a new sign-in link.</p>
+      <a class="btn btn-ghost" href="/admin/login">Go to sign in</a>
+    </>
+  )}
+</PanelSignIn>
+
+<script>
+  import { startRegistration, browserSupportsWebAuthn } from '@simplewebauthn/browser';
+
+  const btn = document.querySelector<HTMLButtonElement>('[data-register]');
+  const msg = document.querySelector<HTMLElement>('[data-msg]');
+  if (btn && msg) {
+    const say = (text: string, ok = false) => { msg.textContent = text; msg.classList.toggle('err', !ok); msg.classList.toggle('ok', ok); };
+    if (!browserSupportsWebAuthn()) { btn.disabled = true; say('This browser doesn’t support passkeys. Open the link in Safari, Chrome or Edge.'); }
+    btn.addEventListener('click', async () => {
+      btn.disabled = true; say('');
+      const token = btn.dataset.token!;
+      try {
+        const opts = await fetch('/api/auth/register-options', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
+        if (!opts.ok) { say('This link no longer works. Ask the panel admin for a new one.'); return; }
+        const response = await startRegistration({ optionsJSON: await opts.json() });
+        const res = await fetch('/api/auth/register-verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, response }) });
+        const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+        if (res.ok && data.ok) { say('Passkey saved. Opening the panel…', true); location.href = '/admin'; return; }
+        say(data.error === 'invite' ? 'This link no longer works. Ask the panel admin for a new one.' : 'That didn’t work. Please try again.');
+      } catch (e) {
+        const name = (e as Error)?.name;
+        say(name === 'InvalidStateError' ? 'This device already has a passkey for the panel. Go to sign in instead.'
+          : name === 'NotAllowedError' ? 'Cancelled. Try again when you’re ready.' : 'That didn’t work. Please try again.');
+      }
+      btn.disabled = false;
+    });
+  }
+</script>

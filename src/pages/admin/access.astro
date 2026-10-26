@@ -4,17 +4,26 @@ import Admin from '../../layouts/Admin.astro';
 import { db } from '../../lib/db';
 import { field, logChange } from '../../lib/admin';
 import { isCabinetAdmin } from '../../lib/auth';
+import { INVITE_DAYS, createInvite } from '../../lib/panel-auth';
 
 const me = Astro.locals.user!;
 if (!isCabinetAdmin(me)) return Astro.redirect('/admin?saved=' + encodeURIComponent('Only cabinet admins can manage access'));
 
-type U = { id: number; email: string; last_sign_in_at: string | null; roles: string | null };
+type U = { id: number; email: string; last_sign_in_at: string | null; roles: string | null; passkeys: string | null };
 const d = db();
-const load = async () => (await d.prepare(`SELECT u.id, u.email, u.last_sign_in_at, GROUP_CONCAT(r.role) AS roles FROM users u
-  JOIN user_roles r ON r.user_id = u.id AND r.role IN ('editor', 'cabinet_admin') GROUP BY u.id ORDER BY u.email`).all<U>()).results;
+const load = async () => (await d.prepare(`SELECT u.id, u.email, u.last_sign_in_at, GROUP_CONCAT(DISTINCT r.role) AS roles,
+    (SELECT GROUP_CONCAT(p.device, ' | ') FROM passkeys p WHERE p.user_id = u.id) AS passkeys
+  FROM users u JOIN user_roles r ON r.user_id = u.id AND r.role IN ('editor', 'cabinet_admin') GROUP BY u.id ORDER BY u.email`).all<U>()).results;
 let users = await load();
 const admins = () => users.filter((u) => u.roles?.includes('cabinet_admin'));
 let error = '';
+// A new sign-in link is shown once, right after it's made (only its hash is stored).
+const shown: { invite: { email: string; link: string } | null } = { invite: null };
+const makeInvite = async (id: number, email: string) => {
+  const token = await createInvite(id, me.email);
+  await logChange(me.email, 'users', id, 'update', `Made a sign-in link for ${email}`).run();
+  shown.invite = { email, link: `${Astro.url.origin}/admin/invite/${token}` };
+};
 
 if (Astro.request.method === 'POST') {
   const form = await Astro.request.formData();
@@ -31,8 +40,12 @@ if (Astro.request.method === 'POST') {
         ...roles.map((r) => d.prepare('INSERT OR IGNORE INTO user_roles (user_id, role, granted_by) VALUES (?, ?, ?)').bind(u!.id, r, me.email)),
         logChange(me.email, 'users', u!.id, 'update', `Gave ${email} ${role === 'cabinet_admin' ? 'cabinet admin' : 'editor'} access`),
       ]);
-      return Astro.redirect('/admin/access?saved=' + encodeURIComponent(`${email} can now sign in`), 303);
+      await makeInvite(u!.id, email);
     }
+  }
+  if (action === 'invite') {
+    const target = users.find((u) => u.id === Number(form.get('id')));
+    if (target) await makeInvite(target.id, target.email);
   }
   if (action === 'remove' || action === 'demote') {
     const id = Number(form.get('id'));
@@ -41,8 +54,11 @@ if (Astro.request.method === 'POST') {
     if (target && removingAdmin && admins().length <= 1) error = 'There must always be at least one cabinet admin.';
     else if (target) {
       const roles = action === 'demote' ? ['cabinet_admin'] : ['editor', 'cabinet_admin'];
+      // Removing access also signs them out everywhere and deletes their passkeys and unused links.
+      const signOut = action === 'remove' ? ['panel_sessions', 'passkeys', 'panel_invites'].map((t) => d.prepare(`DELETE FROM ${t} WHERE user_id = ?`).bind(id)) : [];
       await d.batch([
         ...roles.map((r) => d.prepare('DELETE FROM user_roles WHERE user_id = ? AND role = ?').bind(id, r)),
+        ...signOut,
         logChange(me.email, 'users', id, 'update', action === 'demote' ? `Made ${target.email} an editor (no longer admin)` : `Removed access for ${target.email}`),
       ]);
       return Astro.redirect('/admin/access?saved=' + encodeURIComponent(action === 'demote' ? 'Changed to editor' : 'Access removed'), 303);
@@ -61,9 +77,20 @@ const when = (iso: string | null) => iso ? new Intl.DateTimeFormat('en-GB', { ti
   </div>
   {error && <div class="err-box" role="alert">{error}</div>}
 
+  {shown.invite && (
+    <section class="card invite-box" role="status">
+      <h2>Sign-in link for {shown.invite.email}</h2>
+      <p class="hint">Send this link to them privately (e.g. WhatsApp). They open it on the phone or computer they’ll edit from and save a passkey. It works <strong>once</strong> and expires in {INVITE_DAYS} days. It’s only shown now: if it’s lost, make a new one.</p>
+      <div class="invite-row">
+        <input type="text" readonly value={shown.invite.link} aria-label="Sign-in link" data-invite-link />
+        <button class="btn btn-primary" type="button" data-copy-invite>Copy link</button>
+      </div>
+    </section>
+  )}
+
   <form method="post" class="card form-grid">
     <h2>Give someone access</h2>
-    <p class="hint">They sign in with this email address: Cloudflare emails them a one-time code.</p>
+    <p class="hint">After you add them, you get a one-time sign-in link to send them. They save a passkey (Face ID, fingerprint or phone PIN); no password.</p>
     <input type="hidden" name="_action" value="add" />
     <div class="pair">
       <div class="f"><label for="a-email">Email</label><input id="a-email" type="email" name="email" required placeholder="name@example.com" /></div>
@@ -83,11 +110,12 @@ const when = (iso: string | null) => iso ? new Intl.DateTimeFormat('en-GB', { ti
           <li>
             <div class="list-main">
               <span class="list-title">{u.email}{u.id === me.id && ' (you)'}</span>
-              <span class="list-meta">Last signed in: {when(u.last_sign_in_at)}</span>
+              <span class="list-meta">Last signed in: {when(u.last_sign_in_at)} · {u.passkeys ? `Passkeys: ${u.passkeys}` : 'No passkey yet'}</span>
             </div>
             <span class:list={['badge', admin ? 'badge-ok' : 'badge-draft']}>{admin ? 'Cabinet admin' : 'Editor'}</span>
             <form method="post" class="list-actions">
               <input type="hidden" name="id" value={u.id} />
+              <button class="icon-btn" name="_action" value="invite" title="A one-time link to save a passkey on a (new) device">Sign-in link</button>
               {admin && <button class="icon-btn" name="_action" value="demote" data-confirm={`Make ${u.email} an editor (not admin)?`}>Make editor</button>}
               <button class="icon-btn" name="_action" value="remove" data-confirm={`Remove all panel access for ${u.email}?`}>Remove</button>
             </form>
@@ -97,3 +125,20 @@ const when = (iso: string | null) => iso ? new Intl.DateTimeFormat('en-GB', { ti
     </ul>
   </section>
 </Admin>
+
+<script>
+  // Copy the new sign-in link.
+  document.querySelector('[data-copy-invite]')?.addEventListener('click', async (e) => {
+    const input = document.querySelector<HTMLInputElement>('[data-invite-link]')!;
+    const btn = e.currentTarget as HTMLButtonElement;
+    try { await navigator.clipboard.writeText(input.value); } catch { input.select(); document.execCommand('copy'); }
+    btn.textContent = 'Copied ✓';
+    setTimeout(() => { btn.textContent = 'Copy link'; }, 1800);
+  });
+</script>
+
+<style>
+  .invite-box { border-color: #86efac; background: #f0fdf4; }
+  .invite-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .invite-row input { flex: 1 1 260px; min-width: 0; font-family: ui-monospace, monospace; font-size: 0.85rem; }
+</style>
