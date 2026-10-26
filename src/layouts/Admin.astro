@@ -29,6 +29,7 @@ const nav = [
   { href: '/admin/settings', key: 'settings', label: 'Settings & links' },
   ...(admin ? [{ href: '/admin/access', key: 'access', label: 'Panel access' }] : []),
 ];
+const currentLabel = (nav.find((n) => n.key === active)?.label ?? '').replace(/ \(\d+\)$/, '');
 ---
 <!doctype html>
 <html lang="en" dir="ltr">
@@ -41,20 +42,27 @@ const nav = [
   </head>
   <body class="panel">
     <a class="skip-link" href="#panel-main">Skip to content</a>
-    <aside class="panel-side">
+    <!-- Phones: a top bar (logo, current section, Menu); the menu opens as a grid. Wide screens: a sidebar. -->
+    <aside class="panel-side" data-panel-side>
       <a class="panel-brand" href="/admin">
         <img src="/brand/iise-logo.png" width="536" height="186" alt="IISE" />
         <span>Editing panel</span>
       </a>
-      <nav aria-label="Panel">
-        <ul class="panel-nav">
-          {nav.map((n) => <li><a href={n.href} aria-current={n.key === active ? 'page' : undefined}>{n.label}</a></li>)}
-        </ul>
-      </nav>
-      <div class="panel-side-foot">
-        <a class="panel-viewsite" href={siteUrl} target="_blank" rel="noopener">View the live site ↗</a>
-        <p class="panel-user">Signed in as<br /><strong>{user.email}</strong></p>
-        <form method="post" action="/api/auth/logout"><button class="panel-signout" type="submit">Sign out</button></form>
+      <span class="panel-current" aria-hidden="true">{currentLabel}</span>
+      <button class="panel-menu-btn" type="button" aria-expanded="false" aria-controls="panel-drawer" data-panel-menu>
+        Menu{waiting > 0 && <span class="panel-menu-dot" aria-label={`${waiting} waiting for approval`}>{waiting}</span>}
+      </button>
+      <div class="panel-drawer" id="panel-drawer">
+        <nav aria-label="Panel">
+          <ul class="panel-nav">
+            {nav.map((n) => <li><a href={n.href} aria-current={n.key === active ? 'page' : undefined}>{n.label}</a></li>)}
+          </ul>
+        </nav>
+        <div class="panel-side-foot">
+          <a class="panel-viewsite" href={siteUrl} target="_blank" rel="noopener">View the live site ↗</a>
+          <p class="panel-user">Signed in as <br /><strong>{user.email}</strong></p>
+          <form method="post" action="/api/auth/logout"><button class="panel-signout" type="submit">Sign out</button></form>
+        </div>
       </div>
     </aside>
     <main id="panel-main" class="panel-main">
@@ -62,6 +70,16 @@ const nav = [
       <slot />
     </main>
     <script>
+      // Phones: open and close the menu.
+      const side = document.querySelector<HTMLElement>('[data-panel-side]');
+      const menuBtn = document.querySelector<HTMLButtonElement>('[data-panel-menu]');
+      menuBtn?.addEventListener('click', () => {
+        const open = side!.classList.toggle('is-open');
+        menuBtn.setAttribute('aria-expanded', String(open));
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && side?.classList.contains('is-open')) { side.classList.remove('is-open'); menuBtn?.setAttribute('aria-expanded', 'false'); menuBtn?.focus(); }
+      });
       // Ask before deleting; warn before leaving a form with unsaved changes.
       document.querySelectorAll<HTMLElement>('[data-confirm]').forEach((el) =>
         el.addEventListener('click', (e) => { if (!confirm(el.dataset.confirm!)) e.preventDefault(); }));

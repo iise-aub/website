@@ -18,7 +18,7 @@ const id = `f-${name}`;
         : <input id={`${id}-en`} type="text" name={`${name}_en`} value={en} required={required} aria-invalid={error ? 'true' : undefined} />}
     </div>
     <div class="f">
-      <label class="lang-tag" for={`${id}-ar`}>العربية · Arabic (optional; English shows if empty)</label>
+      <label class="lang-tag" for={`${id}-ar`} title="If left empty, the English shows on the Arabic site">العربية · Arabic (optional)</label>
       {long
         ? <textarea id={`${id}-ar`} name={`${name}_ar`} class:list={[tall && 'tall']} dir="rtl" lang="ar">{ar}</textarea>
         : <input id={`${id}-ar`} type="text" name={`${name}_ar`} value={ar} dir="rtl" lang="ar" />}
