@@ -57,7 +57,7 @@
         "ADMIN_URL": "https://admin.s-majbour.workers.dev",
         "ACCESS_TEAM_DOMAIN": "",
         "ACCESS_AUD": "",
-        "BOOTSTRAP_ADMINS": ""
+        "BOOTSTRAP_ADMINS": "s.majbour@outlook.com"
       }
     }
   }
