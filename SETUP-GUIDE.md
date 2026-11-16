@@ -124,6 +124,35 @@ The panel is at **https://admin.s-majbour.workers.dev** (its own Worker, `admin`
 
 ---
 
+## The society's Moodle page
+
+AUB asked societies to use their Moodle page. Each Moodle module **embeds one page of this site** in its "embed view" (`?embed=1`: no menu or footer, a small English/عربي switch). The content still comes from the editing panel, so changes there appear in Moodle automatically.
+
+**To add a section:** Edit mode → **+ Add an activity or resource** → **URL** → name + address below → **Appearance → Display: Embed** → Save and display.
+
+| Moodle section | Module name | Address |
+| --- | --- | --- |
+| General (top) | Welcome to IISE AUB | `https://www.s-majbour.workers.dev/en/?embed=1` |
+| General (top) | Join IISE AUB | `https://www.s-majbour.workers.dev/en/join?embed=1` |
+| About us | About IISE AUB | `https://www.s-majbour.workers.dev/en/about?embed=1` |
+| About us | Meet the team | `https://www.s-majbour.workers.dev/en/team?embed=1` |
+| About us | Our journey | `https://www.s-majbour.workers.dev/en/history?embed=1` |
+| Events & members | Events | `https://www.s-majbour.workers.dev/en/events?embed=1` |
+| Events & members | For members | `https://www.s-majbour.workers.dev/en/members?embed=1` |
+| Events & members | Weekly puzzle: Depot Drop | `https://www.s-majbour.workers.dev/en/game?embed=1` |
+| Explore IE | New to IE? | `https://www.s-majbour.workers.dev/en/new-to-ie?embed=1` |
+| Explore IE | Where can IE take you? | `https://www.s-majbour.workers.dev/en/fields?embed=1` |
+| Explore IE | Why join IISE? | `https://www.s-majbour.workers.dev/en/why-join?embed=1` |
+| Alumni & companies | Alumni stories | `https://www.s-majbour.workers.dev/en/alumni?embed=1` |
+| Alumni & companies | Work with us (companies) | `https://www.s-majbour.workers.dev/en/companies?embed=1` |
+| Alumni & companies | Contact us | `https://www.s-majbour.workers.dev/en/contact?embed=1` |
+
+- Only AUB sites (`*.aub.edu.lb`) may embed these pages. If AUB's Moodle moves to another address, the allowed list in `src/middleware.ts` must be updated.
+- **When the site moves to a real domain,** change the start of each address (`https://www.s-majbour.workers.dev`) in the 14 modules.
+- Puzzle players inside Moodle are remembered on their device (in the frame's storage), separately from players on the standalone website.
+
+---
+
 ## Later, before Phase 2 (not now)
 
 - Buy the domain through Cloudflare (the treasurer pays: about $8.50 for the first year and $11.20 a year after for a .org).
