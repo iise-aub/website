@@ -18,6 +18,8 @@ const ph = (block: string) => Boolean(text[block]?.needs_content);
 const fieldsText = tx('hero_fields');
 const fields = fieldsText.text.split(/\n|\|/).map((f) => f.trim()).filter(Boolean).map((text) => ({ text, lang: fieldsText.lang }));
 const arrow = lang === 'ar' ? '←' : '→';
+// The society's Moodle page shows just this hero as its animated banner (?embed=1&part=hero).
+const heroOnly = Astro.url.searchParams.get('embed') === '1' && Astro.url.searchParams.get('part') === 'hero';
 
 const doors = [
   { key: 'new', href: `/${lang}/new-to-ie` },
@@ -25,17 +27,17 @@ const doors = [
   { key: 'members', href: `/${lang}/members` },
 ];
 ---
-<Base lang={lang} title="IISE AUB" description={tx('hero_text').text} settings={settings}>
+<Base lang={lang} title="IISE AUB" description={tx('hero_text').text} settings={settings} banner={heroOnly}>
   <section class="hero">
     <div class="wrap hero-grid">
       <div class="hero-copy">
         <T v={tx('hero_eyebrow')} page={lang} as="p" class="eyebrow hero-eyebrow" placeholder={ph('hero_eyebrow')} />
         <h1><T v={tx('hero_title')} page={lang} placeholder={ph('hero_title')} /></h1>
         <T v={tx('hero_text')} page={lang} as="p" class="lede" placeholder={ph('hero_text')} />
-        <div class="hero-actions">
+        {!heroOnly && <div class="hero-actions">
           <a class="btn btn-primary btn-lg" href={`/${lang}/join`}><T v={tx('join_button')} page={lang} /> <span class="arrow" aria-hidden="true">{arrow}</span></a>
           <a class="btn btn-ghost btn-lg" href="#journey">{t(lang, 'explore')}</a>
-        </div>
+        </div>}
       </div>
 
       <!-- The globe from the IISE logo, ringed by fields of industrial engineering. -->
@@ -50,6 +52,7 @@ const doors = [
     </div>
   </section>
 
+  {!heroOnly && <>
   <EventBanner lang={lang} event={nextEvent} settings={settings} emptyTitle={tx('banner_empty_title')} emptyText={tx('banner_empty_text')} />
 
   <section class="doors" aria-labelledby="doors-title">
@@ -74,6 +77,7 @@ const doors = [
   <JourneyMap lang={lang} stations={stations} eyebrow={tx('journey_eyebrow')} title={tx('journey_title')} intro={tx('journey_intro')} moreHref={`/${lang}/history`} />
 
   <GameTeaser lang={lang} />
+  </>}
 </Base>
 
 <style>
@@ -115,6 +119,21 @@ const doors = [
   }
   @keyframes field-in { from { opacity: 0; transform: translateY(8px) scale(0.96); } to { opacity: 1; transform: none; } }
   @keyframes bob { 0%, 100% { translate: 0 0; } 50% { translate: 0 -5px; } }
+
+  /* Banner mode (Moodle top section): the hero fills the frame and scales with its width; no buttons. */
+  :global(html:has(body.embed-banner)), :global(body.embed-banner) { height: 100%; overflow: hidden; }
+  :global(body.embed-banner) main { height: 100%; }
+  :global(body.embed-banner) .hero { height: 100%; padding: 0; display: flex; align-items: center; }
+  :global(body.embed-banner) .hero-grid { width: 100%; grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr); gap: 3vw; }
+  :global(body.embed-banner) .hero-eyebrow { margin-bottom: 1.4vh; }
+  :global(body.embed-banner) .hero h1 { font-size: clamp(1.3rem, 4.3vw, 3.6rem); margin-bottom: 1.6vh; max-width: 17ch; }
+  :global(body.embed-banner) .lede { font-size: clamp(0.82rem, 1.5vw, 1.1rem); margin: 0; }
+  :global(body.embed-banner) .globe-stage { width: min(34vw, 82vh); margin: 0 auto; }
+  @media (max-width: 939px) { :global(body.embed-banner) .fields { display: none; } }
+  @media (max-width: 560px) {
+    :global(body.embed-banner) .hero-grid { grid-template-columns: 1fr; gap: 2vh; text-align: start; }
+    :global(body.embed-banner) .globe-stage { width: min(44vw, 34vh); margin: 0; }
+  }
 
   /* Three doors */
   .doors { padding-block: 72px 0; }

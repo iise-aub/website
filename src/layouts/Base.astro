@@ -15,9 +15,11 @@ interface Props {
   image?: string;
   /** Embedded in another site (the society's Moodle page): no header or footer. Defaults to ?embed=1 in the address. */
   bare?: boolean;
+  /** Embedded as the Moodle page's animated banner: like bare, without the language switch. */
+  banner?: boolean;
 }
-const { lang, title, description = '', settings, image } = Astro.props;
-const bare = Astro.props.bare ?? Astro.url.searchParams.get('embed') === '1';
+const { lang, title, description = '', settings, image, banner = false } = Astro.props;
+const bare = banner || (Astro.props.bare ?? Astro.url.searchParams.get('embed') === '1');
 const site = (env.SITE_URL as string) || Astro.url.origin;
 const path = Astro.url.pathname;
 const alternate = otherLangPath(path, lang);
@@ -55,9 +57,9 @@ const isCurrent = (slug: string) => path.startsWith(`/${lang}/${slug}`);
     <meta name="theme-color" content="#ffffff" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   </head>
-  <body class:list={[{ 'is-embed': bare }]}>
+  <body class:list={[{ 'is-embed': bare, 'embed-banner': banner }]}>
     {!bare && <a class="skip-link" href="#main">{t(lang, 'skip')}</a>}
-    {bare && (
+    {bare && !banner && (
       <div class="embed-bar">
         <a class="lang-switch embed-lang" href={`${alternate}?embed=1`} hreflang={other} lang={other} aria-label={t(lang, 'switchLangLabel')}>{t(lang, 'switchLang')}</a>
       </div>
