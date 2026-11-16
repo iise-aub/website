@@ -140,7 +140,7 @@ Frame code (replace ADDRESS):
 
 | Moodle section (tile) | Module name | Address |
 | --- | --- | --- |
-| General (top) | Banner (Text and media area with moodle/banner.png) | — |
+| General (top) | Banner: the website's animated hero (Text and media area, frame height 380) | `https://www.s-majbour.workers.dev/en/?embed=1&part=hero` |
 | General (top) | Welcome to IISE AUB | `https://www.s-majbour.workers.dev/en/?embed=1` |
 | 1 · About us | About IISE AUB | `https://www.s-majbour.workers.dev/en/about?embed=1` |
 | 1 · About us | Meet the team | `https://www.s-majbour.workers.dev/en/team?embed=1` |
