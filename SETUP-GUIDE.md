@@ -128,7 +128,7 @@ The panel is at **https://admin.s-majbour.workers.dev** (its own Worker, `admin`
 
 AUB asked societies to use their Moodle page. Each Moodle module **embeds one page of this site** in its "embed view" (`?embed=1`: no menu or footer, a small English/عربي switch). The content still comes from the editing panel, so changes there appear in Moodle automatically.
 
-**Look:** like the IEEE page: a banner in the top section and the course in a tiles format (Course settings → Course format → the Grid/Tiles format), with one picture per section tile. The pictures are in `moodle/` (`tile-1-about.png` … `tile-6-alumni.png`); re-make them with `node scripts/make-moodle-assets.mjs`.
+**Look:** like the IEEE page: a banner in the top section and the course in a tiles format (Course settings → Course format → the Grid/Tiles format), with one picture per section tile. The pictures are in `moodle/no-text/` (icon only: the Tiles format already writes the section name on the picture) and `moodle/` (with the title built in); re-make them with `node scripts/make-moodle-assets.mjs`.
 
 **To add a section (must be a Page module):** Edit mode → **+ Add an activity or resource** → **Page** → name below → in **Page content** open the source code view (`</>`) and paste the frame code below with that section's address → under **Appearance**, untick "Display page name", "Display page description" and "Display last modified date" → Save and display.
 

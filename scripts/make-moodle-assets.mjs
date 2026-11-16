@@ -112,8 +112,21 @@ const tiles = [
   ['3-events', 'events', 'Events'],
   ['4-puzzle', 'puzzle', 'Weekly puzzle'],
   ['5-explore', 'explore', 'Explore IE'],
-  ['6-alumni', 'alumni', 'Alumni & companies'],
+  ['6-alumni', 'alumni', 'Alumni'],
 ];
+// Moodle's Tiles format writes the section name over the picture (top left), so these versions carry no text:
+// just the icon, centred and clear of that label.
+function iconTile(file, icon) {
+  const W = 900, H = 600;
+  const c = createCanvas(W, H), ctx = c.getContext('2d');
+  background(ctx, W, H);
+  globe(ctx, W / 2, H / 2 + 40, 250, 0.14);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+  ctx.beginPath(); ctx.arc(W / 2, H / 2 + 40, 132, 0, Math.PI * 2); ctx.fill();
+  drawIcon(ctx, icon, W / 2 - 80, H / 2 + 40 - 80, 160, C.white);
+  mkdirSync(`${OUT}/no-text`, { recursive: true });
+  writeFileSync(`${OUT}/no-text/tile-${file}.png`, c.toBuffer('image/png'));
+}
 function tile(file, icon, title) {
   const W = 900, H = 600;
   const c = createCanvas(W, H), ctx = c.getContext('2d');
@@ -127,5 +140,5 @@ function tile(file, icon, title) {
 }
 
 await banner();
-for (const [file, icon, title] of tiles) tile(file, icon, title);
-console.log(`Wrote ${OUT}/banner.png and ${tiles.length} tiles.`);
+for (const [file, icon, title] of tiles) { tile(file, icon, title); iconTile(file, icon); }
+console.log(`Wrote ${OUT}/banner.png, ${tiles.length} tiles with titles and ${tiles.length} without (${OUT}/no-text).`);
