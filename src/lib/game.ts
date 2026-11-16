@@ -248,10 +248,9 @@ export async function depotDrop(week: string): Promise<DepotDrop> {
 export const scoreFor = (best: number, yours: number, speed = 1) => Math.max(0, Math.min(1000, Math.round(((1000 * best) / yours) * speed)));
 
 // ---------- Speed ----------
-// Saad, Oct 25 2026: time counts, so there's no time to work the answer out with AI. Full points for the
-// first 45 seconds, then the score shrinks steadily (×0.75 at 2 min, ×0.55 at 3 min) down to ×0.25 from 4½ min.
-// Starts with week 44 so that week 43's players keep the rules they played under.
-export const SPEED = { fromWeek: '2026-W44', fullMs: 45_000, decayMs: 300_000, min: 0.25 } as const;
+// Saad, Oct 25 2026: time counts, so there's no time to solve it with AI. Nov 16 2026: like Kahoot, every second
+// counts: the score drops steadily from the moment you press Start (×0.75 at 1 min, ×0.5 at 2 min) down to ×0.25 at 3 min.
+export const SPEED = { fromWeek: '2026-W44', fullMs: 0, decayMs: 240_000, min: 0.25 } as const;
 export const isTimedWeek = (week: string) => week >= SPEED.fromWeek;
 export const speedFactor = (ms: number) =>
   ms <= SPEED.fullMs ? 1 : Math.max(SPEED.min, 1 - (ms - SPEED.fullMs) / SPEED.decayMs);

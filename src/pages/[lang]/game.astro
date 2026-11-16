@@ -321,7 +321,7 @@ const labels = {
         if (speedNow) {
           const f = factor(ms);
           speedNow.textContent = `×${f.toFixed(2)}`;
-          speedNow.classList.toggle('is-dropping', f < 1);
+          speedNow.classList.toggle('is-dropping', f < 0.75);
         }
       }, 500);
       boardEl.scrollIntoView({ block: 'nearest' });
