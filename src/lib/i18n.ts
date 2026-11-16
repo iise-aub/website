@@ -210,7 +210,7 @@ const ui = {
     nav_contact: 'تواصل معنا',
     nav_join: 'انضمّ',
     nav_members: 'للأعضاء',
-    nav_newToIe: 'جديد على الهندسة الصناعية',
+    nav_newToIe: 'جديد على الهندسة',
     nav_whyJoin: 'لماذا تنضمّ',
     nav_home: 'الرئيسية',
     nextEvent: 'الفعالية القادمة',

@@ -130,6 +130,19 @@ AUB asked societies to use their Moodle page. Each Moodle module **embeds one pa
 
 **Look:** like the IEEE page: a banner in the top section and the course in a tiles format (Course settings → Course format → the Grid/Tiles format), with one picture per section tile. The pictures are in `moodle/no-text/` (icon only: the Tiles format already writes the section name on the picture) and `moodle/` (with the title built in); re-make them with `node scripts/make-moodle-assets.mjs`.
 
+**Simplest set-up (Tiles format, no pop-ups): one Text and media area per section.** The Tiles format opens Page modules in a pop-up, while a Text and media area shows directly in the section when its tile is clicked. Each one holds a single frame with tabs for that section's pages (`&tabs=…`):
+
+| Section | Frame address |
+| --- | --- |
+| Top section (banner) | `https://www.s-majbour.workers.dev/en/?embed=1&part=hero` (height 380) |
+| About Us | `https://www.s-majbour.workers.dev/en/about?embed=1&tabs=about,team,history` |
+| Events & Members | `https://www.s-majbour.workers.dev/en/events?embed=1&tabs=events,members,join` |
+| Weekly Puzzle | `https://www.s-majbour.workers.dev/en/game?embed=1` |
+| Explore IE | `https://www.s-majbour.workers.dev/en/new-to-ie?embed=1&tabs=new-to-ie,fields,why-join` |
+| Alumni | `https://www.s-majbour.workers.dev/en/alumni?embed=1&tabs=alumni,companies,contact` |
+
+In the frame code, write each `&` in the address as `&amp;`.
+
 **To add a section (must be a Page module):** Edit mode → **+ Add an activity or resource** → **Page** → name below → in **Page content** open the source code view (`</>`) and paste the frame code below with that section's address → under **Appearance**, untick "Display page name", "Display page description" and "Display last modified date" → Save and display.
 
 Frame code (replace ADDRESS):
