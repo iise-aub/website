@@ -12,7 +12,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   if (settings.game_enabled !== '1') return json({ error: 'off' }, 403);
   const { nickname } = (await request.json().catch(() => ({}))) as { nickname?: string };
 
-  let player = await getPlayer(cookies.get(PLAYER_COOKIE)?.value);
+  // Embedded (Moodle): no cookie inside another site's frame, so the page sends the player id it stored.
+  const embedded = request.headers.get('X-Embed') === '1';
+  let player = await getPlayer(cookies.get(PLAYER_COOKIE)?.value ?? (embedded ? request.headers.get('X-Player') ?? undefined : undefined));
   if (!player) {
     const clean = cleanNickname(String(nickname ?? ''));
     if (!clean.ok) return json({ error: clean.error }, 400);
@@ -23,10 +25,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 
   const week = weekId();
-  if (await myScore(week, player.id)) return json({ error: 'played' }, 409);
+  // Embedded pages keep the player id themselves (returned only when they ask, so normal pages never see it).
+  const keep = embedded ? { player: player.id } : {};
+  if (await myScore(week, player.id)) return json({ error: 'played', ...keep }, 409);
   const puzzle = await depotDrop(week);
   return json({
-    nickname: player.nickname,
+    nickname: player.nickname, ...keep,
     token: await signStart(week, player.id, Date.now()),
     grid: puzzle.grid, w: W, h: H, depots: DEPOTS,
   });

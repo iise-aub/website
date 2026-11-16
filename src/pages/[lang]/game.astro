@@ -20,7 +20,10 @@ const on = settings.game_enabled === '1';
 
 const week = weekId();
 const { end } = weekBounds();
-const player = await getPlayer(Astro.cookies.get(PLAYER_COOKIE)?.value);
+// Embedded in the society's Moodle page (?embed=1): browsers don't send our cookie inside another site's frame,
+// so the player is remembered in the frame's own storage and passed back as ?p=<id> (see the script below).
+const embed = Astro.url.searchParams.get('embed') === '1';
+const player = await getPlayer(Astro.cookies.get(PLAYER_COOKIE)?.value ?? (embed ? Astro.url.searchParams.get('p') ?? undefined : undefined));
 const [mine, rank, board, term, last] = await Promise.all([
   player ? myScore(week, player.id) : null,
   player ? weekRank(week, player.id) : null,
@@ -44,7 +47,17 @@ const labels = {
   row: L('gRow'), col: L('gCol'), servedBy: L('gServedBy'),
 };
 ---
-<Base lang={lang} title={`${tx('title').text} · ${tx('eyebrow').text}`} description={tx('intro').text} settings={settings}>
+<Base lang={lang} title={`${tx('title').text} · ${tx('eyebrow').text}`} description={tx('intro').text} settings={settings} bare={embed}>
+  {embed && (
+    <script is:inline>
+      // Embedded: come back as the same player (their id lives in this frame's storage).
+      try {
+        const id = localStorage.getItem('iise_player');
+        const u = new URL(location.href);
+        if (id && u.searchParams.get('p') !== id) { u.searchParams.set('p', id); location.replace(u.href); }
+      } catch (e) { /* storage blocked: they can still play, as a new player each time */ }
+    </script>
+  )}
   <PageHead lang={lang} eyebrow={tx('eyebrow')} title={tx('title')} intro={tx('intro')}>
     <p class="week-badge"><span class="dot" aria-hidden="true"></span><span dir="ltr">{week.replace('-W', ' · W')}</span> · {L('gNewIn')} {daysLeft}{L('gDays')} {hoursLeft}{L('gHours')}</p>
   </PageHead>
@@ -137,6 +150,18 @@ const labels = {
   const COLORS = ['#1a3668', '#2f7fd1', '#b45309'];
   const WAREHOUSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M12 3 2 8v13h5v-7h10v7h5V8L12 3Zm-3 13h6v1.5H9V16Zm0 3h6v2H9v-2Z"/></svg>';
   const HOUSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3 2 11h3v9h5v-5h4v5h5v-9h3L12 3Z"/></svg>';
+
+  // Embedded in Moodle: send the player id from this frame's storage, since our cookie isn't sent there.
+  const embedded = document.body.classList.contains('is-embed');
+  const PLAYER_KEY = 'iise_player';
+  function apiHeaders(): Record<string, string> {
+    const h: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (embedded) {
+      h['X-Embed'] = '1';
+      try { const id = localStorage.getItem(PLAYER_KEY); if (id) h['X-Player'] = id; } catch { /* storage blocked */ }
+    }
+    return h;
+  }
 
   document.querySelectorAll<HTMLElement>('[data-game]').forEach((root) => {
     const L = JSON.parse(root.dataset.labels!) as Record<string, string>;
@@ -278,8 +303,9 @@ const labels = {
       e.preventDefault();
       formError.textContent = '';
       const nickname = (form.querySelector<HTMLInputElement>('#nickname')?.value ?? '').trim();
-      const res = await fetch('/api/game/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nickname }) });
-      const data = (await res.json().catch(() => ({}))) as { error?: string; token?: string; grid?: string[]; w?: number; h?: number; depots?: number };
+      const res = await fetch('/api/game/start', { method: 'POST', headers: apiHeaders(), body: JSON.stringify({ nickname }) });
+      const data = (await res.json().catch(() => ({}))) as { error?: string; token?: string; grid?: string[]; w?: number; h?: number; depots?: number; player?: string };
+      if (data.player && embedded) { try { localStorage.setItem(PLAYER_KEY, data.player); } catch { /* storage blocked */ } }
       if (!res.ok) {
         if (data.error === 'played') return location.reload();
         formError.textContent = data.error === 'taken' ? L.taken : data.error === 'length' || data.error === 'chars' ? L.invalid : L.error;
@@ -305,7 +331,7 @@ const labels = {
     root.querySelector('[data-reset]')!.addEventListener('click', () => { depots = []; render(); });
     submit.addEventListener('click', async () => {
       submit.disabled = true; playError.textContent = '';
-      const res = await fetch('/api/game/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, depots }) });
+      const res = await fetch('/api/game/submit', { method: 'POST', headers: apiHeaders(), body: JSON.stringify({ token, depots }) });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (res.ok || data.error === 'played') { clearInterval(timer); location.reload(); return; }
       playError.textContent = data.error === 'week-ended' ? L.weekEnded : L.error;

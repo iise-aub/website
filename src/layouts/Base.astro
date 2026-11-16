@@ -13,8 +13,10 @@ interface Props {
   description?: string;
   settings: Record<string, string>;
   image?: string;
+  /** Embedded in another site (e.g. the society's Moodle page): no header or footer, links open in a new tab. */
+  bare?: boolean;
 }
-const { lang, title, description = '', settings, image } = Astro.props;
+const { lang, title, description = '', settings, image, bare = false } = Astro.props;
 const site = (env.SITE_URL as string) || Astro.url.origin;
 const path = Astro.url.pathname;
 const alternate = otherLangPath(path, lang);
@@ -51,10 +53,11 @@ const isCurrent = (slug: string) => path.startsWith(`/${lang}/${slug}`);
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#ffffff" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    {bare && <base target="_blank" />}
   </head>
-  <body>
-    <a class="skip-link" href="#main">{t(lang, 'skip')}</a>
-    <header class="site-header">
+  <body class:list={[{ 'is-embed': bare }]}>
+    {!bare && <a class="skip-link" href="#main">{t(lang, 'skip')}</a>}
+    {!bare && <header class="site-header">
       <div class="wrap header-row">
         <a class="brand" href={`/${lang}/`}>
           <picture>
@@ -83,11 +86,11 @@ const isCurrent = (slug: string) => path.startsWith(`/${lang}/${slug}`);
            aria-label={t(lang, 'switchLangLabel')} data-lang-switch={other}>{t(lang, 'switchLang')}</a>
         <a class="btn btn-primary join-cta" href={`/${lang}/join`}>{t(lang, 'nav_join')}</a>
       </div>
-    </header>
+    </header>}
 
     <main id="main"><slot /></main>
 
-    <footer class="site-footer">
+    {!bare && <footer class="site-footer">
       <Meridians class="footer-meridians" />
       <div class="wrap footer-grid">
         <div>
@@ -112,7 +115,7 @@ const isCurrent = (slug: string) => path.startsWith(`/${lang}/${slug}`);
           <li><a href={alternate} lang={other} data-lang-switch={other}>{t(lang, 'switchLang')}</a></li>
         </ul>
       </div>
-    </footer>
+    </footer>}
 
     <script>
       // Remember the chosen language for the next visit (a functional cookie, no tracking).

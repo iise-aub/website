@@ -9,7 +9,9 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   const { token, depots } = (await request.json().catch(() => ({}))) as { token?: string; depots?: unknown };
-  const player = await getPlayer(cookies.get(PLAYER_COOKIE)?.value);
+  // Embedded (Moodle): the page sends the player id it stored, since our cookie isn't sent inside a frame.
+  const fromFrame = request.headers.get('X-Embed') === '1' ? request.headers.get('X-Player') ?? undefined : undefined;
+  const player = await getPlayer(cookies.get(PLAYER_COOKIE)?.value ?? fromFrame);
   const start = token ? await readStart(token) : null;
   if (!player || !start || start.p !== player.id) return json({ error: 'invalid' }, 400);
   if (start.w !== weekId()) return json({ error: 'week-ended' }, 409);
