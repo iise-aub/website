@@ -30,7 +30,7 @@ type TabSlug = keyof typeof TAB_LABELS;
 const tabsParam = bare && !banner ? (Astro.url.searchParams.get('tabs') ?? '') : '';
 const tabs = tabsParam.split(',').filter((s): s is TabSlug => s in TAB_LABELS).slice(0, 6);
 const tabQuery = tabs.length ? `&tabs=${tabs.join(',')}` : '';
-const currentSlug = path.replace(/^\/(en|ar)\/?/, '').split('/')[0] || 'home';
+const currentSlug = Astro.url.pathname.replace(/^\/(en|ar)\/?/, '').split('/')[0] || 'home';
 const tabHref = (slug: TabSlug) => `/${lang}/${slug === 'home' ? '' : slug}?embed=1${tabQuery}`;
 const site = (env.SITE_URL as string) || Astro.url.origin;
 const path = Astro.url.pathname;
