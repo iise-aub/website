@@ -11,3 +11,6 @@ db/media/*/load.sql
 /*.jpeg
 /*.jpg
 /*.pdf
+
+# Local data backups (never committed)
+backups/

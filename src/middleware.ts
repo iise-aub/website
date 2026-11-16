@@ -4,7 +4,7 @@
 //   stored for the panel admin's approval instead of being applied (src/lib/approvals.ts).
 // - Same-origin check on every form POST (protects against cross-site form submissions).
 // - Basic security headers everywhere; the panel is never cached or indexed. Pages can't be framed by other sites,
-//   except the puzzle's embed view (/en/game?embed=1) inside AUB sites (the society's Moodle page).
+//   except the public pages' embed view (?embed=1, e.g. /en/game?embed=1) inside AUB sites (the society's Moodle page).
 import { defineMiddleware } from 'astro:middleware';
 import { env } from 'cloudflare:workers';
 import { isDevBypass, resolveAdmin } from './lib/auth';
@@ -69,9 +69,9 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
   if (String(env.NOINDEX) === '1') response.headers.set('X-Robots-Tag', 'noindex, nofollow');
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  // No other site may show our pages in a frame, except the puzzle's embed view inside AUB's own sites
-  // (the society's Moodle page).
-  if (!adminWorker && /^\/(en|ar)\/game\/?$/.test(pathname) && ctx.url.searchParams.get('embed') === '1') {
+  // No other site may show our pages in a frame, except the public pages' embed view (?embed=1) inside
+  // AUB's own sites: the society's Moodle page shows each section this way. The panel is never framed.
+  if (!adminWorker && /^\/(en|ar)(\/|$)/.test(pathname) && ctx.url.searchParams.get('embed') === '1') {
     response.headers.set('Content-Security-Policy', "frame-ancestors 'self' https://aub.edu.lb https://*.aub.edu.lb");
   } else {
     response.headers.set('X-Frame-Options', 'DENY');

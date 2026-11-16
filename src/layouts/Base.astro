@@ -13,10 +13,11 @@ interface Props {
   description?: string;
   settings: Record<string, string>;
   image?: string;
-  /** Embedded in another site (e.g. the society's Moodle page): no header or footer, links open in a new tab. */
+  /** Embedded in another site (the society's Moodle page): no header or footer. Defaults to ?embed=1 in the address. */
   bare?: boolean;
 }
-const { lang, title, description = '', settings, image, bare = false } = Astro.props;
+const { lang, title, description = '', settings, image } = Astro.props;
+const bare = Astro.props.bare ?? Astro.url.searchParams.get('embed') === '1';
 const site = (env.SITE_URL as string) || Astro.url.origin;
 const path = Astro.url.pathname;
 const alternate = otherLangPath(path, lang);
@@ -53,10 +54,35 @@ const isCurrent = (slug: string) => path.startsWith(`/${lang}/${slug}`);
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#ffffff" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    {bare && <base target="_blank" />}
   </head>
   <body class:list={[{ 'is-embed': bare }]}>
     {!bare && <a class="skip-link" href="#main">{t(lang, 'skip')}</a>}
+    {bare && (
+      <div class="embed-bar">
+        <a class="lang-switch embed-lang" href={`${alternate}?embed=1`} hreflang={other} lang={other} aria-label={t(lang, 'switchLangLabel')}>{t(lang, 'switchLang')}</a>
+      </div>
+    )}
+    {bare && (
+      <script is:inline>
+        // Embedded in Moodle: links to our other pages stay in this frame (as embedded pages); anything else
+        // (AUB registration, Instagram, PDFs, calendar files) opens in a new tab.
+        document.addEventListener('click', function (e) {
+          var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+          if (!a || a.dataset.embedChecked) return;
+          var u = new URL(a.getAttribute('href'), location.href);
+          var here = new URL(location.href);
+          if (u.origin === location.origin && /^\/(en|ar)(\/|$)/.test(u.pathname) && !/\.ics$/.test(u.pathname)) {
+            if (u.pathname === here.pathname && u.hash) return; // a jump within this page
+            u.searchParams.set('embed', '1');
+            var p = here.searchParams.get('p'); if (p) u.searchParams.set('p', p);
+            a.href = u.href; a.target = '_self';
+          } else {
+            a.target = '_blank'; a.rel = 'noopener';
+          }
+          a.dataset.embedChecked = '1';
+        }, true);
+      </script>
+    )}
     {!bare && <header class="site-header">
       <div class="wrap header-row">
         <a class="brand" href={`/${lang}/`}>
@@ -209,6 +235,9 @@ const isCurrent = (slug: string) => path.startsWith(`/${lang}/${slug}`);
     transition: background-color 180ms ease;
   }
   .lang-switch:hover { background: var(--steel-100); color: var(--navy-900); }
+  /* Embedded (Moodle): just a small language switch at the top. */
+  .embed-bar { display: flex; justify-content: flex-end; padding: 10px var(--gutter) 0; }
+  .embed-bar .embed-lang { margin: 0; border: 1px solid var(--steel-200); min-height: 38px; font-size: 0.95rem; }
   .join-cta { min-height: 44px; padding: 0.5em 1.2em; }
   @media (max-width: 380px) { .join-cta { padding-inline: 0.9em; } .lang-switch { padding: 0 8px; } }
 
