@@ -128,6 +128,8 @@ The panel is at **https://admin.s-majbour.workers.dev** (its own Worker, `admin`
 
 AUB asked societies to use their Moodle page. Each Moodle module **embeds one page of this site** in its "embed view" (`?embed=1`: no menu or footer, a small English/عربي switch). The content still comes from the editing panel, so changes there appear in Moodle automatically.
 
+**Look:** like the IEEE page: a banner in the top section and the course in a tiles format (Course settings → Course format → the Grid/Tiles format), with one picture per section tile. The pictures are in `moodle/` (`tile-1-about.png` … `tile-6-alumni.png`); re-make them with `node scripts/make-moodle-assets.mjs`.
+
 **To add a section (must be a Page module):** Edit mode → **+ Add an activity or resource** → **Page** → name below → in **Page content** open the source code view (`</>`) and paste the frame code below with that section's address → under **Appearance**, untick "Display page name", "Display page description" and "Display last modified date" → Save and display.
 
 Frame code (replace ADDRESS):
@@ -136,22 +138,23 @@ Frame code (replace ADDRESS):
 <iframe src="ADDRESS" title="IISE AUB" width="100%" height="900" style="border:0; width:100%; height:85vh; min-height:600px;"></iframe>
 ```
 
-| Moodle section | Module name | Address |
+| Moodle section (tile) | Module name | Address |
 | --- | --- | --- |
+| General (top) | Banner (Text and media area with moodle/banner.png) | — |
 | General (top) | Welcome to IISE AUB | `https://www.s-majbour.workers.dev/en/?embed=1` |
-| General (top) | Join IISE AUB | `https://www.s-majbour.workers.dev/en/join?embed=1` |
-| About us | About IISE AUB | `https://www.s-majbour.workers.dev/en/about?embed=1` |
-| About us | Meet the team | `https://www.s-majbour.workers.dev/en/team?embed=1` |
-| About us | Our journey | `https://www.s-majbour.workers.dev/en/history?embed=1` |
-| Events & members | Events | `https://www.s-majbour.workers.dev/en/events?embed=1` |
-| Events & members | For members | `https://www.s-majbour.workers.dev/en/members?embed=1` |
-| Events & members | Weekly puzzle: Depot Drop | `https://www.s-majbour.workers.dev/en/game?embed=1` |
-| Explore IE | New to IE? | `https://www.s-majbour.workers.dev/en/new-to-ie?embed=1` |
-| Explore IE | Where can IE take you? | `https://www.s-majbour.workers.dev/en/fields?embed=1` |
-| Explore IE | Why join IISE? | `https://www.s-majbour.workers.dev/en/why-join?embed=1` |
-| Alumni & companies | Alumni stories | `https://www.s-majbour.workers.dev/en/alumni?embed=1` |
-| Alumni & companies | Work with us (companies) | `https://www.s-majbour.workers.dev/en/companies?embed=1` |
-| Alumni & companies | Contact us | `https://www.s-majbour.workers.dev/en/contact?embed=1` |
+| 1 · About us | About IISE AUB | `https://www.s-majbour.workers.dev/en/about?embed=1` |
+| 1 · About us | Meet the team | `https://www.s-majbour.workers.dev/en/team?embed=1` |
+| 1 · About us | Our journey | `https://www.s-majbour.workers.dev/en/history?embed=1` |
+| 2 · Join IISE AUB | Join IISE AUB | `https://www.s-majbour.workers.dev/en/join?embed=1` |
+| 2 · Join IISE AUB | For members | `https://www.s-majbour.workers.dev/en/members?embed=1` |
+| 2 · Join IISE AUB | Why join IISE? | `https://www.s-majbour.workers.dev/en/why-join?embed=1` |
+| 3 · Events | Events | `https://www.s-majbour.workers.dev/en/events?embed=1` |
+| 4 · Weekly puzzle | Weekly puzzle: Depot Drop | `https://www.s-majbour.workers.dev/en/game?embed=1` |
+| 5 · Explore IE | New to IE? | `https://www.s-majbour.workers.dev/en/new-to-ie?embed=1` |
+| 5 · Explore IE | Where can IE take you? | `https://www.s-majbour.workers.dev/en/fields?embed=1` |
+| 6 · Alumni & companies | Alumni stories | `https://www.s-majbour.workers.dev/en/alumni?embed=1` |
+| 6 · Alumni & companies | Work with us (companies) | `https://www.s-majbour.workers.dev/en/companies?embed=1` |
+| 6 · Alumni & companies | Contact us | `https://www.s-majbour.workers.dev/en/contact?embed=1` |
 
 - Only AUB sites (`*.aub.edu.lb`) may embed these pages. If AUB's Moodle moves to another address, the allowed list in `src/middleware.ts` must be updated.
 - **When the site moves to a real domain,** change the start of each address (`https://www.s-majbour.workers.dev`) in the 14 modules.
