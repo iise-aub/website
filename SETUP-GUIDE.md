@@ -128,7 +128,13 @@ The panel is at **https://admin.s-majbour.workers.dev** (its own Worker, `admin`
 
 AUB asked societies to use their Moodle page. Each Moodle module **embeds one page of this site** in its "embed view" (`?embed=1`: no menu or footer, a small English/عربي switch). The content still comes from the editing panel, so changes there appear in Moodle automatically.
 
-**To add a section:** Edit mode → **+ Add an activity or resource** → **URL** → name + address below → **Appearance → Display: Embed** → Save and display.
+**To add a section (must be a Page module):** Edit mode → **+ Add an activity or resource** → **Page** → name below → in **Page content** open the source code view (`</>`) and paste the frame code below with that section's address → under **Appearance**, untick "Display page name", "Display page description" and "Display last modified date" → Save and display.
+
+Frame code (replace ADDRESS):
+
+```html
+<iframe src="ADDRESS" title="IISE AUB" width="100%" height="900" style="border:0; width:100%; height:85vh; min-height:600px;"></iframe>
+```
 
 | Moodle section | Module name | Address |
 | --- | --- | --- |
