@@ -160,7 +160,7 @@ These come from the "Still open" list in BRIEF.md. The history facts block launc
 
 0. Domain name and ending (.org or .com). Deferred; needed before Phase 2.
 
-1. ~~History facts~~ Answered by the history research (Oct 25 2026): founding 2015 (first event Oct 8, 2015), Society of the Year 2024-25. Still to confirm: who awards Society of the Year.
+1. ~~History facts~~ Answered by the history research (Oct 25 2026): founding 2015 (first event Oct 8, 2015), Society of the Year 2024-25. Awarding body: AUB's Office of Student Affairs (Saad, Nov 16 2026).
 2. AUB student email domain (possibly @mail.aub.edu). Needed by Phase 2.
 3. ~~Coffee with IISE: where episodes are published.~~ Answered: Instagram for now (Saad, Oct 25 2026).
 4. LinkedIn: does the chapter have a page?

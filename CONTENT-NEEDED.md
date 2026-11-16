@@ -81,7 +81,7 @@ Each milestone needs: English title and text, date (year, or full date if known)
 - [x] When AUB introduced industrial engineering: August 2014; plus Engineering Management 1990 and the IEM department August 2015 (source: AUB IEM history page, checked Oct 22 2026).
 - [x] When IISE AUB was founded: 2015; first event Oct 8, 2015 as the Industrial Engineering Society (chapter Instagram; history research, Oct 25 2026). No exact founding day exists, so the map uses the first event.
 - [x] The award: Society of the Year at AUB 2024-25, plus the Community and Citizenship Award (Instagram, Aug 20 2025).
-- [ ] Confirm who gives Society of the Year (most likely AUB's Office of Student Affairs, at the Excellence in Student Life Award Ceremony). Owner: to assign
+- [x] Society of the Year is awarded by AUB's Office of Student Affairs (OSA) (Saad, Nov 16 2026). On the history station.
 - [x] Chapter milestones: 13 stations from the history research (Oct 25 2026), 7 on the homepage. Other moments in the research (football tournament, Lego Lean competition, AUS competition, vlog competition, Modern Mills visit, yearbook…) were left out on purpose to keep the map short; add them in the panel if wanted.
 
 **History photos still needed** (Oct 25 2026). The 9 photos on the map are Instagram thumbnails (about 300 px), so they look soft on large screens. Send originals (full size) where possible:
