@@ -126,13 +126,19 @@ const doors = [
   :global(body.embed-banner) .hero { height: 100%; padding: 0; display: flex; align-items: center; }
   :global(body.embed-banner) .hero-grid { width: 100%; grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr); gap: 3vw; }
   :global(body.embed-banner) .hero-eyebrow { margin-bottom: 1.4vh; }
-  :global(body.embed-banner) .hero h1 { font-size: clamp(1.3rem, 4.3vw, 3.6rem); margin-bottom: 1.6vh; max-width: 17ch; }
-  :global(body.embed-banner) .lede { font-size: clamp(0.82rem, 1.5vw, 1.1rem); margin: 0; }
+  /* Sizes follow the frame's width and height, so the banner fits however tall Moodle makes it. */
+  :global(body.embed-banner) .hero h1 { font-size: clamp(1rem, min(4.3vw, 10vh), 3.6rem); margin-bottom: 1.6vh; max-width: 17ch; }
+  :global(body.embed-banner) .lede { font-size: clamp(0.8rem, min(1.5vw, 3.6vh), 1.1rem); margin: 0; }
   :global(body.embed-banner) .globe-stage { width: min(34vw, 82vh); margin: 0 auto; }
   @media (max-width: 939px) { :global(body.embed-banner) .fields { display: none; } }
+  @media (max-width: 640px), (max-height: 300px) {
+    :global(body.embed-banner) .lede { display: none; }
+  }
   @media (max-width: 560px) {
-    :global(body.embed-banner) .hero-grid { grid-template-columns: 1fr; gap: 2vh; text-align: start; }
-    :global(body.embed-banner) .globe-stage { width: min(44vw, 34vh); margin: 0; }
+    :global(body.embed-banner) .hero-eyebrow { display: none; }
+    :global(body.embed-banner) .hero-grid { grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.5fr); gap: 4vw; }
+    :global(body.embed-banner) .hero h1 { font-size: clamp(1rem, min(6.2vw, 11vh), 2rem); margin: 0; }
+    :global(body.embed-banner) .globe-stage { width: min(30vw, 60vh); }
   }
 
   /* Three doors */
