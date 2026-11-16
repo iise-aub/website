@@ -32,20 +32,20 @@ Send everything in English. Send Arabic too if you have it; otherwise Claude dra
 
 ### Settings
 
-- [ ] Optional: the term the CRN 5029 applies to (for example "Clubs Scholastic Year 2026-27"). The Join page now hides the term line when it's empty (Saad, Oct 23 2026), so this is no longer blocking. Owner: to assign
+- [x] (Done: "Clubs 2026-2027", Nov 16 2026.) The term the CRN 5029 applies to (for example "Clubs Scholastic Year 2026-27"). The Join page now hides the term line when it's empty (Saad, Oct 23 2026), so this is no longer blocking. Owner: to assign
 - [x] AUB registration link (Saad, Oct 22, 2026).
 - [x] The exact registration steps: from Saad's illustrated guide (Oct 25, 2026): sign in → "Register for Classes" → term "Clubs 2026-2027" → Continue → "Enter CRNs" → CRN → "Add to Summary" → Submit. The PDF guide is linked on the Join page.
 - [ ] Each year: a new registration guide PDF when the clubs term or the CRN changes (Panel → Settings & links → Registration guide). Owner: Technical Development
 - [x] WhatsApp group invite link, Instagram, TikTok and the sub-cabinet application form (from linktr.ee/IISE.AUB, Oct 22, 2026).
 - [x] Chapter contact email: iiseaub@outlook.com.
-- [ ] LinkedIn page link, or confirm "we don't have one" (there's none on the Linktree). Owner: to assign
+- [x] LinkedIn: no chapter page found (searched Nov 16 2026); link left empty, so it stays hidden.
 - [x] Coffee with IISE episodes: on the chapter Instagram for now (Saad, Oct 25 2026); "Listen to the episodes" on the Members page links there. Update the podcast link in the panel if it moves.
 
 ### Page text (facts only the team knows)
 
 - [ ] Mission statement: **approve or edit the draft** now on the About page (written by Claude from AUB's chapter page, Oct 23 2026). Owner: cabinet
 - [ ] About the chapter: "what we do" list drafted (Oct 23 2026); check it, and say whether the faculty advisor wants to be named. Owner: to assign
-- [ ] Member benefits we actually offer (for "Why join"). Owner: to assign
+- [x] Why join benefits: society-focused (community, help from older students, events, teams, puzzle), Nov 16 2026. Check the wording.
 - [ ] The IE path at AUB: drafted from AUB's IEM history page (Oct 23 2026) on About and New to IE; someone should give it a quick check. Where graduates go is covered by the Careers in IE page. Owner: to assign
 - [x] Companies page: why work with us and what we offer (Saad, Oct 25 2026: social media exposure, brand recognition, engagement; AUB's 9,759 students from AUB's Facts and Figures, Oct 2025).
 - [ ] Optional, to strengthen the Companies page: our Instagram and TikTok follower counts and typical event attendance (only real numbers). Owner: to assign
@@ -54,8 +54,8 @@ Send everything in English. Send Arabic too if you have it; otherwise Claude dra
 - [x] Coffee with IISE: a podcast with people working in the field (Saad, Oct 25 2026). On the Members and Team pages.
 - [ ] Confirm or edit the draft team descriptions (written by Claude, Oct 22 2026), and say who leads each team. Owner: to assign
 - [x] When team applications open: start of each fall semester (Saad, Oct 22, 2026). On the Team page.
-- [ ] Approve the Privacy note (draft written; check it matches what we actually do). Owner: Saad
-- [ ] IISE membership join page link (Why join page). Owner: to assign
+- [x] Privacy note: corrected to match the site (puzzle nicknames; no analytics) and published (Nov 16 2026). Saad may still review it.
+- [x] IISE membership link: not used (Saad: the benefits are the society's own).
 
 All of these show in the editing panel under **Overview → Still to fill in**, and can be typed straight into the panel once it's online.
 
